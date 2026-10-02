@@ -2,6 +2,9 @@
 
 A compact hand-made maze. Eating a pellet is the scoring baseline (1 point).
 Touching a ghost ends the run.
+
+The tile size is derived from the window so the field fills it, and the ghosts
+move slower than the player.
 """
 
 from __future__ import annotations
@@ -30,25 +33,27 @@ UP = (0, -1)
 DOWN = (0, 1)
 
 MAZE = (
-    "###################",
-    "#........#........#",
-    "#.##.###.#.###.##.#",
-    "#.................#",
-    "#.##.#.#####.#.##.#",
-    "#....#...#...#....#",
-    "####.### # ###.####",
-    "   #.#       #.#   ",
-    "####.# ##-## #.####",
-    "#........#........#",
-    "#.##.###.#.###.##.#",
-    "#..#...........#..#",
-    "##.#.#.#####.#.#.##",
-    "#....#...#...#....#",
-    "###################",
+    "#########################",
+    "#.......................#",
+    "#...........#...........#",
+    "#....##.###.#.###.##....#",
+    "#.......................#",
+    "#....##.#.#####.#.##....#",
+    "#.......#...#...#.......#",
+    "#...###.### # ###.###...#",
+    "#...  #.#       #.#  ...#",
+    "#...###.# ##-## #.###...#",
+    "#...........#...........#",
+    "#....##.###.#.###.##....#",
+    "#.....#...........#.....#",
+    "#...#.#.#.#####.#.#.#...#",
+    "#.......#...#...#.......#",
+    "#.......................#",
+    "#########################",
 )
 
-GHOST_SPAWNS = ((7, 7), (9, 7), (11, 7))
-PAC_SPAWN = (9, 11)
+GHOST_SPAWNS = ((10, 8), (12, 8), (14, 8))
+PAC_SPAWN = (12, 12)
 GHOST_COLORS = (GHOST_RED, GHOST_PINK, GHOST_CYAN)
 
 
@@ -63,15 +68,20 @@ class Ghost:
 class PacmanGame(MiniGame):
     name = "PAC-MAN"
 
-    CELL = 32
-    PAC_STEP = 0.13
-    GHOST_STEP = 0.19
+    # Seconds per tile. Ghosts are deliberately slower than the player.
+    PAC_STEP = 0.18
+    GHOST_STEP = 0.30
     MAX_QUEUE = 2
 
     def __init__(self, width: int, height: int, rng: random.Random | None = None) -> None:
         self.rng = rng or random.Random()
         self.rows = len(MAZE)
         self.cols = len(MAZE[0])
+        # Pick the biggest whole-pixel tile that fits, then bottom-align so the
+        # top of the field clears the HUD.
+        self.cell = max(1, min(width // self.cols, height // self.rows))
+        self.x0 = (width - self.cols * self.cell) // 2
+        self.y0 = height - self.rows * self.cell
         super().__init__(width, height)
 
     # -- lifecycle -----------------------------------------------------------
@@ -204,42 +214,58 @@ class PacmanGame(MiniGame):
                 return
 
     # -- rendering -----------------------------------------------------------
+    def _px(self, gx: int) -> int:
+        return self.x0 + gx * self.cell
+
+    def _py(self, gy: int) -> int:
+        return self.y0 + gy * self.cell
+
     def draw(self, surface: pygame.Surface) -> None:
         surface.fill(BLACK)
-        c = self.CELL
+        c = self.cell
         for y, row in enumerate(MAZE):
             for x, ch in enumerate(row):
                 if ch == "#":
                     pygame.draw.rect(
-                        surface, (28, 40, 160), (x * c, y * c, c, c), border_radius=6
+                        surface,
+                        (28, 40, 160),
+                        (self._px(x), self._py(y), c, c),
+                        border_radius=6,
                     )
                 elif ch == "-":
-                    pygame.draw.rect(surface, (240, 170, 200), (x * c, y * c + c // 2, c, 4))
+                    pygame.draw.rect(
+                        surface, (240, 170, 200), (self._px(x), self._py(y) + c // 2, c, 4)
+                    )
 
         for (x, y) in self.pellets:
-            pygame.draw.circle(surface, PELLET, (x * c + c // 2, y * c + c // 2), 3)
+            pygame.draw.circle(
+                surface, PELLET, (self._px(x) + c // 2, self._py(y) + c // 2), max(2, c // 9)
+            )
 
         for ghost in self.ghosts:
             self._draw_ghost(surface, ghost)
         self._draw_pac(surface)
 
     def _draw_pac(self, surface: pygame.Surface) -> None:
-        c = self.CELL
-        center = (self.pac_x * c + c // 2, self.pac_y * c + c // 2)
-        pygame.draw.circle(surface, PAC_YELLOW, center, c // 2 - 3)
-        # mouth wedge pointing in the travel direction
+        c = self.cell
+        cx, cy = self._px(self.pac_x) + c // 2, self._py(self.pac_y) + c // 2
+        r = c // 2 - 3
+        pygame.draw.circle(surface, PAC_YELLOW, (cx, cy), r)
+        # Mouth wedge pointing in the travel direction. Keep it inside the
+        # circle so it never paints over neighbouring walls.
         a = math.radians({RIGHT: 0, LEFT: 180, UP: 90, DOWN: 270}[self.pac_dir])
-        p1 = (center[0] + math.cos(a + 0.5) * c, center[1] + math.sin(a + 0.5) * c)
-        p2 = (center[0] + math.cos(a - 0.5) * c, center[1] + math.sin(a - 0.5) * c)
-        pygame.draw.polygon(surface, BLACK, [center, p1, p2])
+        p1 = (cx + math.cos(a + 0.5) * r, cy + math.sin(a + 0.5) * r)
+        p2 = (cx + math.cos(a - 0.5) * r, cy + math.sin(a - 0.5) * r)
+        pygame.draw.polygon(surface, BLACK, [(cx, cy), p1, p2])
 
     def _draw_ghost(self, surface: pygame.Surface, ghost: Ghost) -> None:
-        c = self.CELL
-        x, y = ghost.x * c, ghost.y * c
-        pygame.draw.circle(surface, ghost.color, (x + c // 2, y + c // 2 - 2), c // 2 - 3)
+        c = self.cell
+        x, y = self._px(ghost.x), self._py(ghost.y)
+        r = c // 2 - 3
+        pygame.draw.circle(surface, ghost.color, (x + c // 2, y + c // 2 - 2), r)
         pygame.draw.rect(surface, ghost.color, (x + 3, y + c // 2 - 2, c - 6, c // 2))
-        pygame.draw.circle(surface, DARK, (x + c // 2 - 5, y + c // 2 - 4), 3)
-        pygame.draw.circle(surface, DARK, (x + c // 2 + 5, y + c // 2 - 4), 3)
+        pygame.draw.circle(surface, DARK, (x + c // 2 - r // 3, y + c // 2 - 4), max(2, r // 5))
+        pygame.draw.circle(surface, DARK, (x + c // 2 + r // 3, y + c // 2 - 4), max(2, r // 5))
 
 
 def main() -> None:  # pragma: no cover - interactive entry point
