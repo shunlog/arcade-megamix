@@ -93,7 +93,7 @@ src/megamix/
     snake.py        # Google-snake-style buffered controls
     asteroids.py    # extra wave every new loop
     pong.py
-    tron.py
+    tron.py          # arena resets when the enemy rider dies
     pacman.py
 tests/              # pytest suite for the game logic
 ```

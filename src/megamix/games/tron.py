@@ -38,7 +38,7 @@ class TronGame(MiniGame):
     name = "TRON"
 
     CELL = 20
-    STEP_TIME = 0.06
+    STEP_TIME = 0.09
     MAX_QUEUE = 2
 
     def __init__(self, width: int, height: int, rng: random.Random | None = None) -> None:
@@ -49,12 +49,19 @@ class TronGame(MiniGame):
 
     # -- lifecycle -----------------------------------------------------------
     def reset(self) -> None:
+        self.score = 0
+        self.alive = True
+        self._reset_arena()
+
+    def _reset_arena(self) -> None:
+        """Fresh board: both riders back at their start, all trails cleared.
+
+        Used at the start of a run and every time the enemy rider dies, so the
+        arena never gets permanently clogged with old trails.
+        """
         self.player = Rider(5, self.rows // 2, RIGHT, TRON_PLAYER, is_player=True)
         self.enemy = Rider(self.cols - 6, self.rows // 2, LEFT, TRON_ENEMY)
         self.move_timer = 0.0
-        self.respawn_timer = 0.0
-        self.score = 0
-        self.alive = True
 
     # -- input ---------------------------------------------------------------
     def on_keydown(self, key: int) -> None:
@@ -90,11 +97,6 @@ class TronGame(MiniGame):
         while self.alive and self.move_timer >= self.STEP_TIME:
             self.move_timer -= self.STEP_TIME
             self.tick()
-
-        if not self.enemy:
-            self.respawn_timer -= dt
-            if self.respawn_timer <= 0:
-                self._spawn_enemy()
         return self.alive
 
     @property
@@ -130,19 +132,29 @@ class TronGame(MiniGame):
             elif target_counts[(nx, ny)] > 1:
                 crashed.append(r)
 
-        for r in list(crashed):
-            if r.is_player:
-                self.alive = False
-                return
-            self.enemy = None
-            self.add_score(SCORE_TRON_KILL)
-            self.respawn_timer = 1.0
+        player_crashed = self.player in crashed
+        if player_crashed:
+            self.alive = False
+            return
 
-        for r in self.riders:
-            nx, ny, direction = proposals[id(r)]
-            r.trail.add((nx, ny))
-            r.x, r.y = nx, ny
-            r.direction = direction
+        enemy_crashed = self.enemy in crashed
+
+        if not player_crashed:
+            self._advance_rider(self.player, proposals)
+        if self.enemy is not None and not enemy_crashed:
+            self._advance_rider(self.enemy, proposals)
+
+        if enemy_crashed:
+            self.add_score(SCORE_TRON_KILL)
+            self._reset_arena()
+
+    def _advance_rider(
+        self, rider: Rider, proposals: dict[int, tuple[int, int, tuple[int, int]]]
+    ) -> None:
+        nx, ny, direction = proposals[id(rider)]
+        rider.trail.add((nx, ny))
+        rider.x, rider.y = nx, ny
+        rider.direction = direction
 
     def _next_player_direction(self, rider: Rider) -> tuple[int, int]:
         while rider.pending:
@@ -181,21 +193,6 @@ class TronGame(MiniGame):
             )
         )
         return safe[0]
-
-    def _spawn_enemy(self) -> None:
-        occupied = set()
-        for r in self.riders:
-            occupied |= r.trail
-        free = [
-            (x, y)
-            for y in range(self.rows)
-            for x in range(self.cols)
-            if (x, y) not in occupied
-        ]
-        if not free:
-            return
-        x, y = self.rng.choice(free)
-        self.enemy = Rider(x, y, self.rng.choice((UP, DOWN, LEFT, RIGHT)), TRON_ENEMY)
 
     # -- rendering -----------------------------------------------------------
     def draw(self, surface: pygame.Surface) -> None:

@@ -26,7 +26,7 @@ def test_player_hitting_wall_dies() -> None:
     assert g.alive is False
 
 
-def test_enemy_crash_awards_kill_points() -> None:
+def test_enemy_crash_awards_kill_points_and_resets_the_arena() -> None:
     g = make_game()
     # Corner the enemy so its only in-bounds move runs into the player's trail.
     g.enemy.x, g.enemy.y = 0, 0
@@ -38,8 +38,12 @@ def test_enemy_crash_awards_kill_points() -> None:
 
     g.tick()
 
-    assert g.enemy is None
     assert g.score == before + SCORE_TRON_KILL
+    # The arena resets: both riders return to their start cells with clean trails.
+    assert g.enemy is not None
+    assert (g.player.x, g.player.y) == (5, g.rows // 2)
+    assert g.player.trail == {(5, g.rows // 2)}
+    assert g.enemy.trail == {(g.cols - 6, g.rows // 2)}
 
 
 def test_player_leaves_a_trail() -> None:
