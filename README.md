@@ -1,41 +1,99 @@
-Write a game in pygame that combines the classic video games listed below:
-- snake
-- asteroids
-- pong
-- tron
-- pac-man
+# Arcade Megamix
 
-Use pygame and uv.
+Five classic arcade games in one, switching at an ever faster rate. Survive as
+long as you can and rack up the highest score.
 
-The game will be in the form of mini-games that switch 
-at an increasingly faster rate,
-and the player aims to get the highest score.
+The mini-games rotate in this order:
 
-The idea is that the game starts with the first mini-game (snake), 
-then after 10 seconds it switches to the next one (asteroids), 
-another 10 seconds, next mini-game, so on and so forth,
-once it reaches the last one in the list, 
-it goes back to the first mini-game,
-but now each round lasts 9 seconds.
-The duration of the round keeps decreasing by 1 second on each loop
-but is capped at 3 seconds.
-The game is over when the player dies in any of the mini-games.
+**Snake → Asteroids → Pong → Tron → Pac-Man → Snake → …**
 
-In the top-left, show the remaining time until the game switches.
+- The first loop gives each game **10 seconds**.
+- Every time the rotation wraps around, games get **1 second less**.
+- The round length bottoms out at **3 seconds**.
+- Each mini-game keeps its state, so you resume exactly where you left off.
+- The run ends the moment you die in *any* mini-game.
 
-Show a score in the top-right of the screen, in a big pixel font.
-The scoring should be normalized accross all mini-games,
-so for example eating a pellet in pac-man is worth only 1 point,
-but killing a rider in tron is worth way more points.
+The remaining time until the next switch is shown top-left. Your total score is
+shown top-right in a big blocky pixel font.
 
-Each mini-game's state is saved, so the player continues from where they left off.
-For snake, tron and pac-man, don't worry about what happens when the game ends.
-Only in the case of asteroids, make new asteroids appear on each new loop.
+## Install
 
-Make it so each mini-game should be runnable on its own, for testability.
-Use ADTs for each game and write a few tests for them.
+Requires [uv](https://docs.astral.sh/uv/).
 
-Keep it simple.
+```bash
+uv sync
+```
 
-For snake, make it feel like a clone of the Google snake game in pygame.
-Put emphasis on correct controls, the rotation inputs should be queued correctly.
+Python 3.12 is used automatically via `.python-version`.
+
+## Play
+
+```bash
+uv run arcade-megamix
+```
+
+On the game-over screen press **R** to restart or **Esc** to quit.
+
+## Controls
+
+| Mini-game | Controls |
+| --- | --- |
+| Snake | Arrows / WASD. Turns are buffered — queue up to 3 at once. |
+| Asteroids | ← → rotate, ↑ thrust, Space fire. |
+| Pong | ↑ ↓ (or W/S) move the left paddle. |
+| Tron | Arrows / WASD to steer. |
+| Pac-Man | Arrows / WASD to move. |
+
+## Run a mini-game on its own
+
+Every game is self-contained and runnable for testing:
+
+```bash
+uv run python -m megamix.games.snake
+uv run python -m megamix.games.asteroids
+uv run python -m megamix.games.pong
+uv run python -m megamix.games.tron
+uv run python -m megamix.games.pacman
+```
+
+Standalone mode shows the game's own score and lets you restart with **R**.
+
+## Tests
+
+```bash
+uv run pytest
+```
+
+The tests exercise the pure game logic (movement, collisions, scoring, round
+timing and switching) without needing a display.
+
+## Scoring
+
+Scores are normalised so that a Pac-Man pellet is the baseline of **1 point**:
+
+| Event | Points |
+| --- | --- |
+| Pac-Man pellet | 1 |
+| Snake apple | 5 |
+| Pong paddle hit | 1 |
+| Pong goal (past the CPU) | 10 |
+| Asteroid destroyed (big) | 10 |
+| Asteroid destroyed (small) | 5 |
+| Tron: enemy rider crashes | 25 |
+
+## Project layout
+
+```
+src/megamix/
+  app.py            # main loop, round timing and game switching
+  runner.py         # shared standalone runner
+  config.py         # screen, palette, scoring constants, pixel font
+  games/
+    base.py         # MiniGame interface
+    snake.py        # Google-snake-style buffered controls
+    asteroids.py    # extra wave every new loop
+    pong.py
+    tron.py
+    pacman.py
+tests/              # pytest suite for the game logic
+```
