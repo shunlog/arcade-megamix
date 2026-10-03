@@ -7,22 +7,23 @@ round timing, same scoring and the same buffered-input behaviour.
 ## Requirements
 
 - Node.js 18+ (no runtime dependencies; TypeScript is the only dev dependency)
+- [pnpm](https://pnpm.io/) (this project is managed with pnpm)
 
 ## Run
 
 ```bash
-npm install
-npm start
+pnpm install
+pnpm start
 ```
 
 Then open <http://localhost:8080/>.
 
-`npm start` compiles the TypeScript with `tsc` and launches the zero-dependency
+`pnpm start` compiles the TypeScript with `tsc` and launches the zero-dependency
 static server in `serve.mjs`. You can also run the two steps separately:
 
 ```bash
-npm run build      # tsc -> dist/
-npm run serve      # serves the current directory
+pnpm run build      # tsc -> dist/
+pnpm run serve      # serves the current directory
 ```
 
 Any static file server works; `index.html` loads `./dist/main.js` as an ES
@@ -42,7 +43,7 @@ Pass a `game` query parameter or hash:
 ## Tests
 
 ```bash
-npm test
+pnpm test
 ```
 
 This builds the project and runs the logic tests with Node's built-in test

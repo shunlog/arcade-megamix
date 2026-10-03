@@ -3,12 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@12.3.4",
   "description": "TypeScript + HTML5 canvas port of Arcade Megamix.",
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
     "serve": "node serve.mjs",
-    "start": "npm run build && node serve.mjs",
+    "start": "pnpm run build && node serve.mjs",
     "typecheck": "tsc --noEmit",
     "test": "tsc && node --test test"
   },

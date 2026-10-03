@@ -38,12 +38,12 @@ See [`python/README.md`](python/README.md) for the full controls and layout.
 
 ## TypeScript + HTML5 canvas
 
-Requires Node.js 18+.
+Requires Node.js 18+ and [pnpm](https://pnpm.io/).
 
 ```bash
 cd typescript
-npm install
-npm start          # builds with tsc and serves on http://localhost:8080/
+pnpm install
+pnpm start         # builds with tsc and serves on http://localhost:8080/
 ```
 
 Open <http://localhost:8080/>. You can also launch a single mini-game on its
@@ -53,9 +53,9 @@ own with a query string or hash, e.g.
 Other scripts:
 
 ```bash
-npm run build      # compile TypeScript to dist/
-npm run typecheck  # type-check only
-npm test           # build, then run the logic tests (Node test runner)
+pnpm run build      # compile TypeScript to dist/
+pnpm run typecheck  # type-check only
+pnpm test           # build, then run the logic tests (Node test runner)
 ```
 
 See [`typescript/README.md`](typescript/README.md) for details on the port.
