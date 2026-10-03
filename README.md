@@ -3,6 +3,13 @@
 Five classic arcade games in one, switching at an ever faster rate. Survive as
 long as you can and rack up the highest score.
 
+This repository holds two implementations of the same game:
+
+```
+python/       original pygame implementation
+typescript/   TypeScript + HTML5 canvas port
+```
+
 The mini-games rotate in this order:
 
 **Snake → Asteroids → Pong → Tron → Pac-Man → Snake → …**
@@ -16,23 +23,42 @@ The mini-games rotate in this order:
 The remaining time until the next switch is shown top-left. Your total score is
 shown top-right in a big blocky pixel font.
 
-## Install
+## Python (pygame)
 
 Requires [uv](https://docs.astral.sh/uv/).
 
 ```bash
+cd python
 uv sync
+uv run arcade-megamix
+uv run pytest
 ```
 
-Python 3.12 is used automatically via `.python-version`.
+See [`python/README.md`](python/README.md) for the full controls and layout.
 
-## Play
+## TypeScript + HTML5 canvas
+
+Requires Node.js 18+.
 
 ```bash
-uv run arcade-megamix
+cd typescript
+npm install
+npm start          # builds with tsc and serves on http://localhost:8080/
 ```
 
-On the game-over screen press **R** to restart or **Esc** to quit.
+Open <http://localhost:8080/>. You can also launch a single mini-game on its
+own with a query string or hash, e.g.
+<http://localhost:8080/?game=snake> or `#pacman`.
+
+Other scripts:
+
+```bash
+npm run build      # compile TypeScript to dist/
+npm run typecheck  # type-check only
+npm test           # build, then run the logic tests (Node test runner)
+```
+
+See [`typescript/README.md`](typescript/README.md) for details on the port.
 
 ## Controls
 
@@ -44,28 +70,8 @@ On the game-over screen press **R** to restart or **Esc** to quit.
 | Tron | Arrows / WASD to steer. |
 | Pac-Man | Arrows / WASD to move. |
 
-## Run a mini-game on its own
-
-Every game is self-contained and runnable for testing:
-
-```bash
-uv run python -m megamix.games.snake
-uv run python -m megamix.games.asteroids
-uv run python -m megamix.games.pong
-uv run python -m megamix.games.tron
-uv run python -m megamix.games.pacman
-```
-
-Standalone mode shows the game's own score and lets you restart with **R**.
-
-## Tests
-
-```bash
-uv run pytest
-```
-
-The tests exercise the pure game logic (movement, collisions, scoring, round
-timing and switching) without needing a display.
+In the web port, **P** or **Esc** pauses (the browser has no "quit"), and **R**
+restarts after a game over.
 
 ## Scoring
 
@@ -80,20 +86,3 @@ Scores are normalised so that a Pac-Man pellet is the baseline of **1 point**:
 | Asteroid destroyed (big) | 10 |
 | Asteroid destroyed (small) | 5 |
 | Tron: enemy rider crashes | 25 |
-
-## Project layout
-
-```
-src/megamix/
-  app.py            # main loop, round timing and game switching
-  runner.py         # shared standalone runner
-  config.py         # screen, palette, scoring constants, pixel font
-  games/
-    base.py         # MiniGame interface
-    snake.py        # Google-snake-style buffered controls
-    asteroids.py    # extra wave every new loop
-    pong.py
-    tron.py          # arena resets when the enemy rider dies
-    pacman.py
-tests/              # pytest suite for the game logic
-```

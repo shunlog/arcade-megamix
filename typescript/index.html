@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Arcade Megamix</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --snow-gray: #dde3ea;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        background: var(--snow-gray);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "Courier New", monospace;
+      }
+      #stage {
+        position: relative;
+        width: min(100vw - 4rem, calc(100vh * 4 / 3) - 4rem);
+        aspect-ratio: 4 / 3;
+        max-width: 800px;
+      }
+      /* Pretty 3D bezel: sits behind the canvas so it never distorts the game. */
+      #stage::before {
+        content: "";
+        position: absolute;
+        inset: -16px;
+        z-index: 0;
+        border-radius: 22px;
+        background: linear-gradient(145deg, #8b93a3 0%, #5b6474 30%, #2b303c 70%, #15181f 100%);
+        box-shadow:
+          inset 0 3px 1px rgba(255, 255, 255, 0.55),
+          inset 0 -4px 4px rgba(0, 0, 0, 0.65),
+          inset 3px 0 2px rgba(255, 255, 255, 0.18),
+          inset -4px 0 3px rgba(0, 0, 0, 0.5),
+          0 16px 30px rgba(20, 24, 31, 0.45),
+          0 4px 10px rgba(20, 24, 31, 0.35),
+          0 2px 0 rgba(255, 255, 255, 0.35);
+      }
+      canvas {
+        position: relative;
+        z-index: 1;
+        width: 100%;
+        height: 100%;
+        display: block;
+        image-rendering: pixelated;
+        background: #080810;
+        border-radius: 10px;
+        box-shadow:
+          inset 0 0 0 2px rgba(255, 255, 255, 0.08),
+          inset 0 0 22px rgba(0, 0, 0, 0.9),
+          0 0 0 1px rgba(10, 12, 18, 0.9);
+      }
+      #hint {
+        position: absolute;
+        bottom: -2.6rem;
+        left: 0;
+        right: 0;
+        text-align: center;
+        color: #5b6474;
+        font-size: 12px;
+        letter-spacing: 1px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="stage">
+      <canvas id="game" width="800" height="600"></canvas>
+      <div id="hint">Arrows/WASD &nbsp; Space &nbsp; R restart &nbsp; P pause</div>
+    </div>
+    <script type="module" src="./dist/main.js"></script>
+  </body>
+</html>
