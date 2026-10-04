@@ -1,4 +1,4 @@
-// Logic tests for the TypeScript port, mirroring the Python pytest suite.
+// Logic tests for the game engine.
 // Run with: pnpm test  (builds first, then uses Node's built-in test runner).
 
 import test from "node:test";

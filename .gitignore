@@ -1,10 +1,5 @@
-.venv/
-__pycache__/
-*.py[cod]
-.pytest_cache/
 dist/
 build/
-*.egg-info/
 node_modules/
 .pnpm-debug.log*
 pi-session-*.html
