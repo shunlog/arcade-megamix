@@ -4,32 +4,73 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Arcade Megamix</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap"
+      rel="stylesheet"
+    />
     <style>
       html,
       body {
         margin: 0;
-        height: 100%;
-        /* Gray frame so the 4:3 play area is clearly distinguishable from
-           the page/iframe around it. */
-        background: #3a3f4a;
-        overflow: hidden;
+        min-height: 100%;
       }
-      /* Center the canvas and keep its exact 4:3 (800x600) game area, so the
-         element itself is never wider or taller than the rendered game. */
       body {
-        display: grid;
-        place-items: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 24px;
+        padding: 32px 16px 48px;
+        box-sizing: border-box;
+        /* Page background color. */
+        background: #23262e;
+      }
+      h1 {
+        margin: 0;
+        font-family: "Press Start 2P", monospace;
+        font-size: clamp(20px, 4vw, 40px);
+        font-weight: normal;
+        line-height: 1.4;
+        text-align: center;
+        color: #ffd54a;
+        text-shadow: 3px 3px 0 #11131a;
       }
       canvas {
         display: block;
-        width: min(100vw, calc(100vh * 4 / 3));
-        height: min(100vh, calc(100vw * 3 / 4));
+        width: min(100%, 800px);
+        height: auto;
+        aspect-ratio: 4 / 3;
         image-rendering: pixelated;
+        /* The only styling on the game itself: a border. */
+        border: 4px solid #6c7a89;
+      }
+      .description {
+        width: min(100%, 800px);
+        margin: 0;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 14px;
+        line-height: 1.6;
+        white-space: pre-wrap;
+        color: #c8ccd4;
       }
     </style>
   </head>
   <body>
+    <h1>Arcade Megamix</h1>
     <canvas id="game" width="800" height="600"></canvas>
+    <pre class="description">
+Five classic arcade games in one, switching at an ever faster rate.
+Survive as long as you can and rack up the highest score.
+
+  Snake      - Arrows to steer. Turns are buffered, so you can queue up to 3 at once.
+  Asteroids  - Left / Right to rotate, Up to thrust, Space to fire.
+  Pong       - Up / Down to move the left paddle.
+  Tron       - Arrows to steer your light cycle.
+  Pac-Man    - Arrows to move.
+
+P or Esc pauses. Q quits to the menu. R restarts after a game over.</pre
+    >
     <script type="module" src="./dist/main.js"></script>
   </body>
 </html>
