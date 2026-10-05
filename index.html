@@ -9,15 +9,21 @@
       body {
         margin: 0;
         height: 100%;
-        background: #080810;
+        /* Gray frame so the 4:3 play area is clearly distinguishable from
+           the page/iframe around it. */
+        background: #3a3f4a;
         overflow: hidden;
       }
-      /* The page contains only the canvas; contain keeps its 4:3 ratio. */
+      /* Center the canvas and keep its exact 4:3 (800x600) game area, so the
+         element itself is never wider or taller than the rendered game. */
+      body {
+        display: grid;
+        place-items: center;
+      }
       canvas {
         display: block;
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
+        width: min(100vw, calc(100vh * 4 / 3));
+        height: min(100vh, calc(100vw * 3 / 4));
         image-rendering: pixelated;
       }
     </style>

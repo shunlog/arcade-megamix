@@ -66,15 +66,18 @@
         position: relative;
         border-radius: 12px;
         overflow: hidden;
-        background: #080810;
+        background: #3a3f4a;
         box-shadow: 0 12px 26px rgba(20, 24, 31, 0.35);
       }
+      /* Match the game's 4:3 aspect ratio exactly so the canvas fills the
+         iframe instead of letterboxing inside it. */
       iframe {
         display: block;
         width: 100%;
-        height: 620px;
+        aspect-ratio: 4 / 3;
+        height: auto;
         border: 0;
-        background: #080810;
+        background: #3a3f4a;
       }
       footer {
         margin-top: 1.25rem;
@@ -95,17 +98,6 @@
       </p>
 
       <div class="panel">
-        <label>
-          Game:
-          <select id="game">
-            <option value="">full rotation (megamix)</option>
-            <option value="snake">snake</option>
-            <option value="asteroids">asteroids</option>
-            <option value="pong">pong</option>
-            <option value="tron">tron</option>
-            <option value="pacman">pacman</option>
-          </select>
-        </label>
         <button id="reload" type="button">Reload iframe</button>
         <button id="fullscreen" type="button">Fullscreen iframe</button>
         <span id="src"></span>
@@ -125,7 +117,7 @@
         How it works:
         <ul>
           <li><code>src</code> is the only thing needed to embed a page — no bundler or build step.</li>
-          <li>Changing <code>src</code> (or appending <code>?game=snake</code>) loads a fresh copy of the game.</li>
+          <li>The embedded game opens on its own startup menu; pick a mode there.</li>
           <li>Keyboard focus lives inside the iframe, so click the game once before playing.</li>
           <li><code>allow="fullscreen"</code> lets the embedded page request fullscreen.</li>
           <li>Same-origin here, so this page can reach into <code>iframe.contentWindow</code> if it ever needs to.</li>
@@ -135,21 +127,14 @@
 
     <script>
       const frame = document.getElementById("frame");
-      const game = document.getElementById("game");
       const src = document.getElementById("src");
 
-      // Build the iframe URL from the current game selection.
-      function urlFor(gameId) {
-        return gameId ? `./index.html?game=${encodeURIComponent(gameId)}` : "./index.html";
-      }
-
       function apply() {
-        const url = urlFor(game.value);
+        const url = "./index.html";
         frame.src = url;
-        src.textContent = `iframe src = ${new URL(url, location.href).pathname}${new URL(url, location.href).search}`;
+        src.textContent = `iframe src = ${new URL(url, location.href).pathname}`;
       }
 
-      game.addEventListener("change", apply);
       document.getElementById("reload").addEventListener("click", apply);
       document.getElementById("fullscreen").addEventListener("click", () => {
         if (frame.requestFullscreen) frame.requestFullscreen();

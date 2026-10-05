@@ -10,9 +10,11 @@ export const Keys = {
   S: "KeyS",
   D: "KeyD",
   SPACE: "Space",
+  ENTER: "Enter",
   R: "KeyR",
   ESC: "Escape",
   P: "KeyP",
+  Q: "KeyQ",
 } as const;
 
 export type KeyCode = (typeof Keys)[keyof typeof Keys] | string;

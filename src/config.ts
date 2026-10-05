@@ -48,43 +48,126 @@ export function rgb(color: Color): string {
   return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
 }
 
+// --- Bitmap pixel font ------------------------------------------------------
+// A hand-authored 5x7 glyph set drawn one square at a time. Because every
+// pixel is painted at an integer scale there is no anti-aliasing, so the
+// result stays razor sharp at any size (unlike scaling a system font up).
+
+const GLYPH_W = 5;
+const GLYPH_H = 7;
+const GLYPH_GAP = 1; // in glyph pixels, before scaling
+
+type Glyph = readonly [string, string, string, string, string, string, string];
+
+const GLYPHS: Record<string, Glyph> = {
+  " ": [".....", ".....", ".....", ".....", ".....", ".....", "....."],
+  A: [".###.", "#...#", "#...#", "#####", "#...#", "#...#", "#...#"],
+  B: ["####.", "#...#", "#...#", "####.", "#...#", "#...#", "####."],
+  C: [".####", "#....", "#....", "#....", "#....", "#....", ".####"],
+  D: ["####.", "#...#", "#...#", "#...#", "#...#", "#...#", "####."],
+  E: ["#####", "#....", "#....", "####.", "#....", "#....", "#####"],
+  F: ["#####", "#....", "#....", "####.", "#....", "#....", "#...."],
+  G: [".####", "#....", "#....", "#..##", "#...#", "#...#", ".###."],
+  H: ["#...#", "#...#", "#...#", "#####", "#...#", "#...#", "#...#"],
+  I: ["#####", "..#..", "..#..", "..#..", "..#..", "..#..", "#####"],
+  J: ["..###", "...#.", "...#.", "...#.", "...#.", "#..#.", ".##.."],
+  K: ["#...#", "#..#.", "#.#..", "##...", "#.#..", "#..#.", "#...#"],
+  L: ["#....", "#....", "#....", "#....", "#....", "#....", "#####"],
+  M: ["#...#", "##.##", "#.#.#", "#.#.#", "#...#", "#...#", "#...#"],
+  N: ["#...#", "##..#", "#.#.#", "#..##", "#...#", "#...#", "#...#"],
+  O: [".###.", "#...#", "#...#", "#...#", "#...#", "#...#", ".###."],
+  P: ["####.", "#...#", "#...#", "####.", "#....", "#....", "#...."],
+  Q: [".###.", "#...#", "#...#", "#...#", "#.#.#", "#..#.", ".##.#"],
+  R: ["####.", "#...#", "#...#", "####.", "#.#..", "#..#.", "#...#"],
+  S: [".####", "#....", "#....", ".###.", "....#", "....#", "####."],
+  T: ["#####", "..#..", "..#..", "..#..", "..#..", "..#..", "..#.."],
+  U: ["#...#", "#...#", "#...#", "#...#", "#...#", "#...#", ".###."],
+  V: ["#...#", "#...#", "#...#", "#...#", "#...#", ".#.#.", "..#.."],
+  W: ["#...#", "#...#", "#...#", "#.#.#", "#.#.#", "##.##", "#...#"],
+  X: ["#...#", "#...#", ".#.#.", "..#..", ".#.#.", "#...#", "#...#"],
+  Y: ["#...#", "#...#", ".#.#.", "..#..", "..#..", "..#..", "..#.."],
+  Z: ["#####", "....#", "...#.", "..#..", ".#...", "#....", "#####"],
+  "0": [".###.", "#...#", "#..##", "#.#.#", "##..#", "#...#", ".###."],
+  "1": ["..#..", ".##..", "..#..", "..#..", "..#..", "..#..", ".###."],
+  "2": [".###.", "#...#", "....#", "...#.", "..#..", ".#...", "#####"],
+  "3": ["#####", "...#.", "..#..", "...#.", "....#", "#...#", ".###."],
+  "4": ["...#.", "..##.", ".#.#.", "#..#.", "#####", "...#.", "...#."],
+  "5": ["#####", "#....", "####.", "....#", "....#", "#...#", ".###."],
+  "6": ["..##.", ".#...", "#....", "####.", "#...#", "#...#", ".###."],
+  "7": ["#####", "....#", "...#.", "..#..", ".#...", ".#...", ".#..."],
+  "8": [".###.", "#...#", "#...#", ".###.", "#...#", "#...#", ".###."],
+  "9": [".###.", "#...#", "#...#", ".####", "....#", "...#.", ".##.."],
+  "-": [".....", ".....", ".....", "#####", ".....", ".....", "....."],
+  ".": [".....", ".....", ".....", ".....", ".....", ".##..", ".##.."],
+  ",": [".....", ".....", ".....", ".....", ".##..", ".#...", "#...."],
+  ":": [".....", ".##..", ".##..", ".....", ".##..", ".##..", "....."],
+  ";": [".....", ".##..", ".##..", ".....", ".##..", ".#...", "#...."],
+  "!": ["..#..", "..#..", "..#..", "..#..", "..#..", ".....", "..#.."],
+  "?": [".###.", "#...#", "....#", "...#.", "..#..", ".....", "..#.."],
+  "'": ["..#..", "..#..", ".....", ".....", ".....", ".....", "....."],
+  "\"": [".#.#.", ".#.#.", ".....", ".....", ".....", ".....", "....."],
+  "=": [".....", ".....", "#####", ".....", "#####", ".....", "....."],
+  "+": [".....", "..#..", "..#..", "#####", "..#..", "..#..", "....."],
+  "*": [".....", "#.#.#", ".###.", "#####", ".###.", "#.#.#", "....."],
+  "/": ["....#", "...#.", "...#.", "..#..", ".#...", ".#...", "#...."],
+  "\\": ["#....", ".#...", ".#...", "..#..", "...#.", "...#.", "....#"],
+  "(": ["...#.", "..#..", ".#...", ".#...", ".#...", "..#..", "...#."],
+  ")": [".#...", "..#..", "...#.", "...#.", "...#.", "..#..", ".#..."],
+  "[": [".###.", ".#...", ".#...", ".#...", ".#...", ".#...", ".###."],
+  "]": [".###.", "...#.", "...#.", "...#.", "...#.", "...#.", ".###."],
+  "<": ["...#.", "..#..", ".#...", "#....", ".#...", "..#..", "...#."],
+  ">": [".#...", "..#..", "...#.", "....#", "...#.", "..#..", ".#..."],
+  "_": [".....", ".....", ".....", ".....", ".....", ".....", "#####"],
+  "%": ["##..#", "##.#.", "...#.", "..#..", ".#...", ".#.##", "#..##"],
+  "#": [".#.#.", ".#.#.", "#####", ".#.#.", "#####", ".#.#.", ".#.#."],
+};
+
 /**
- * A cheap pixel font: render small without anti-aliasing, then scale up.
- * Keeps the project asset-free while giving the requested big blocky look.
+ * A true bitmap pixel font: each 5x7 glyph is painted as integer-aligned
+ * squares, so edges stay perfectly sharp with no anti-aliasing blur.
  */
 export class PixelFont {
-  readonly baseSize: number;
   readonly scale: number;
 
-  constructor(size = 12, scale = 3) {
-    this.baseSize = size;
-    this.scale = scale;
+  constructor(scale = 3) {
+    this.scale = Math.max(1, Math.floor(scale));
+  }
+
+  /** Height of one line of text in device pixels. */
+  get height(): number {
+    return GLYPH_H * this.scale;
+  }
+
+  /** Width of a single character cell (glyph + spacing) in device pixels. */
+  get advance(): number {
+    return (GLYPH_W + GLYPH_GAP) * this.scale;
   }
 
   /** Render `text` to an offscreen canvas so it can be drawn blocky. */
   render(text: string, color: Color, scale: number = this.scale): HTMLCanvasElement {
-    const probe = document.createElement("canvas");
-    const pctx = probe.getContext("2d")!;
-    const font = `bold ${this.baseSize}px "Courier New", monospace`;
-    pctx.font = font;
-    const width = Math.max(1, Math.ceil(pctx.measureText(text).width));
-    const height = Math.max(1, Math.ceil(this.baseSize * 1.25));
-
-    const low = document.createElement("canvas");
-    low.width = width;
-    low.height = height;
-    const lctx = low.getContext("2d")!;
-    lctx.font = font;
-    lctx.textBaseline = "top";
-    lctx.fillStyle = rgb(color);
-    lctx.fillText(text, 0, 0);
+    const s = Math.max(1, Math.floor(scale));
+    const chars = Array.from(text.toUpperCase());
+    const advance = (GLYPH_W + GLYPH_GAP) * s;
+    const width = Math.max(1, chars.length * advance - GLYPH_GAP * s);
+    const height = GLYPH_H * s;
 
     const out = document.createElement("canvas");
-    out.width = Math.max(1, width * scale);
-    out.height = Math.max(1, height * scale);
+    out.width = width;
+    out.height = height;
     const octx = out.getContext("2d")!;
     octx.imageSmoothingEnabled = false;
-    octx.drawImage(low, 0, 0, out.width, out.height);
+    octx.fillStyle = rgb(color);
+
+    chars.forEach((ch, i) => {
+      const glyph = GLYPHS[ch] ?? GLYPHS["?"];
+      const ox = i * advance;
+      for (let row = 0; row < GLYPH_H; row++) {
+        const bits = glyph[row];
+        for (let col = 0; col < GLYPH_W; col++) {
+          if (bits[col] === "#") octx.fillRect(ox + col * s, row * s, s, s);
+        }
+      }
+    });
     return out;
   }
 

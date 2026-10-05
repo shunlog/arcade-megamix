@@ -52,16 +52,16 @@ pnpm test           # build, then run the logic tests (Node test runner)
 
 `serve.mjs` also serves `embed.html`, an iframe embed demo of the game page.
 
-## Play a single mini-game
+## Start-up menu
 
-Pass a `game` query parameter or hash:
+The game opens on a start-up screen with two options:
 
-- <http://localhost:8080/?game=snake>
-- <http://localhost:8080/?game=asteroids>
-- <http://localhost:8080/?game=pong>
-- <http://localhost:8080/?game=tron>
-- <http://localhost:8080/?game=pacman>
-- or `#snake`, `#asteroids`, … as the hash
+- **PLAY** starts the full rotation described above.
+- **MINI-GAMES** opens a picker with one button per mini-game plus **BACK**.
+
+Navigate with the arrow keys / WASD and confirm with Enter or Space, or just
+click the buttons. There is no URL-based game selection; everything happens in
+the in-game menus.
 
 ## Controls
 
@@ -73,8 +73,9 @@ Pass a `game` query parameter or hash:
 | Tron | Arrows / WASD to steer. |
 | Pac-Man | Arrows / WASD to move. |
 
-**P** or **Esc** pauses (the browser has no "quit"), and **R** restarts after a
-game over.
+**P** or **Esc** pauses while a game is running; while paused, **Q** quits
+back to the start-up menu. After a game over, **R** restarts and **Esc**
+returns to the start-up menu.
 
 ## Scoring
 
@@ -109,6 +110,7 @@ embed.html          # iframe embed demo
 serve.mjs           # zero-dependency static dev server
 src/
   main.ts           # browser entry: canvas, input, animation loop
+  menu.ts           # canvas startup / mini-game menus
   app.ts            # RoundManager + App (round timing and game switching)
   runner.ts         # standalone mini-game runner
   config.ts         # screen, palette, scoring constants, pixel font
@@ -135,7 +137,7 @@ test/
   use `roundRect` with an `arcTo` fallback.
 - **Modulo semantics**: JavaScript's `%` keeps the sign of the dividend, so
   the wrapping used by Asteroids goes through `mod()` in `draw.ts`.
-- **The pixel font** renders text to an offscreen canvas at a small size, then
-  scales it up with `imageSmoothingEnabled = false` for a non-anti-aliased look.
-- **Esc** toggles pause in the browser instead of quitting, and **P** does the
-  same. **R** still restarts after a game over.
+- **The pixel font** is a hand-authored 5x7 bitmap glyph set painted as
+  integer-aligned squares, so text stays razor sharp with no anti-aliasing.
+- **Esc** pauses while a game is running. On the game-over screen it returns
+  to the start-up menu instead, and **P** still toggles pause.

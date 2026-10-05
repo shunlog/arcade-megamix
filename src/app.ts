@@ -66,8 +66,8 @@ export class App {
   constructor(width: number = SCREEN_W, height: number = SCREEN_H) {
     this.width = width;
     this.height = height;
-    this.big = new PixelFont(14, 3);
-    this.small = new PixelFont(10, 2);
+    this.big = new PixelFont(3);
+    this.small = new PixelFont(2);
     this.games = GAME_ORDER.map((cls) => new cls(width, height));
     this.round = new RoundManager(this.games.length);
   }
@@ -135,7 +135,7 @@ export class App {
     if (this.gameOver) {
       this.drawCentered(ctx, this.big, "GAME OVER", WHITE, this.height / 2 - 60);
       this.drawCentered(ctx, this.small, `FINAL SCORE ${this.totalScore}`, GRAY, this.height / 2);
-      this.drawCentered(ctx, this.small, "R = restart    ESC = quit", GRAY, this.height / 2 + 40);
+      this.drawCentered(ctx, this.small, "R = RESTART    ESC = MENU", GRAY, this.height / 2 + 40);
     }
   }
 

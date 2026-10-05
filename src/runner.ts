@@ -9,8 +9,8 @@ export type StandaloneCtor = new (width: number, height: number) => MiniGame;
 export class StandaloneRunner {
   readonly width: number;
   readonly height: number;
-  readonly big = new PixelFont(14, 3);
-  readonly small = new PixelFont(10, 2);
+  readonly big = new PixelFont(3);
+  readonly small = new PixelFont(2);
   readonly game: MiniGame;
 
   constructor(gameCls: StandaloneCtor, width = SCREEN_W, height = SCREEN_H) {
@@ -51,7 +51,7 @@ export class StandaloneRunner {
 
     if (!this.game.alive) {
       this.drawCentered(ctx, this.big, "GAME OVER", WHITE, this.height / 2 - 40);
-      this.drawCentered(ctx, this.small, "press R to restart / ESC to quit", GRAY, this.height / 2 + 40);
+      this.drawCentered(ctx, this.small, "R = RESTART    ESC = MENU", GRAY, this.height / 2 + 40);
     }
     ctx.restore();
   }
