@@ -51,7 +51,7 @@ export class StandaloneRunner {
 
     if (!this.game.alive) {
       this.drawCentered(ctx, this.big, "GAME OVER", WHITE, this.height / 2 - 40);
-      this.drawCentered(ctx, this.small, "R = RESTART    ESC = MENU", GRAY, this.height / 2 + 40);
+      this.drawCentered(ctx, this.small, "R = RESTART    Q = MENU", GRAY, this.height / 2 + 40);
     }
     ctx.restore();
   }

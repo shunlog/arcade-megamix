@@ -135,7 +135,7 @@ export class App {
     if (this.gameOver) {
       this.drawCentered(ctx, this.big, "GAME OVER", WHITE, this.height / 2 - 60);
       this.drawCentered(ctx, this.small, `FINAL SCORE ${this.totalScore}`, GRAY, this.height / 2);
-      this.drawCentered(ctx, this.small, "R = RESTART    ESC = MENU", GRAY, this.height / 2 + 40);
+      this.drawCentered(ctx, this.small, "R = RESTART    Q = MENU", GRAY, this.height / 2 + 40);
     }
   }
 

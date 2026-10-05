@@ -104,11 +104,7 @@ function start(): void {
     const dead = screen === "megamix" ? app!.gameOver : !runner!.game.alive;
 
     if (code === Keys.ESC) {
-      if (dead) {
-        showMenu();
-        return;
-      }
-      paused = !paused;
+      if (!dead) paused = !paused;
       return;
     }
     if (code === Keys.P) {
@@ -122,6 +118,10 @@ function start(): void {
     if (paused) return;
 
     if (dead) {
+      if (code === Keys.Q) {
+        showMenu();
+        return;
+      }
       if (code === Keys.R) {
         if (screen === "megamix") app!.restart();
         else runner!.game.reset();
