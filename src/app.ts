@@ -197,10 +197,9 @@ export class App {
   draw(ctx: CanvasRenderingContext2D): void {
     this.active.draw(ctx);
 
-    // top-left: time until the next switch + current mini-game name
-    const secs = Math.max(0, this.round.timeToSwitch);
-    const timer = this.big.draw(ctx, secs.toFixed(1).padStart(4, "0"), WHITE, 16, 12);
-    this.small.draw(ctx, this.active.name, GRAY, 18, 12 + timer.height + 6);
+    // top-left: current level + current mini-game name
+    const level = this.big.draw(ctx, `LV ${this.round.level}`, WHITE, 16, 12);
+    this.small.draw(ctx, this.active.name, GRAY, 18, 12 + level.height + 6);
 
     // top-right: big pixel score
     const score = this.big.render(String(this.totalScore).padStart(6, "0"), WHITE);

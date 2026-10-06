@@ -32,8 +32,8 @@ shorter ticks. These are configured in `config.ts` as `LEVEL_START`,
 `LEVEL_STEP` and `LEVEL_FLOOR` (and the tick counts as `PLAY_TICKS` /
 `PAUSE_TICKS`).
 
-The remaining time until the next switch is shown top-left. Your total score is
-shown top-right in a big blocky pixel font.
+The current level is shown top-left (with the active mini-game's name beneath
+it). Your total score is shown top-right in a big blocky pixel font.
 
 ### Sound
 
