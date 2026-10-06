@@ -64,6 +64,17 @@ pnpm run build      # tsc -> dist/
 pnpm run serve      # serves the current directory
 ```
 
+For development with automatic rebuilds and browser reloads:
+
+```bash
+pnpm run dev        # tsc --watch + live-server, opens http://localhost:8080/
+```
+
+`pnpm run dev` keeps `tsc` compiling in the background and live-server watches
+`dist/`, `index.html` and `embed.html`, refreshing the page whenever a rebuild
+lands. (Stop it with Ctrl-C; the `tsc --watch` job runs in the background, so
+run `pkill -f "tsc --watch"` if it outlives the shell.)
+
 Any static file server works; `index.html` loads `./dist/main.js` as an ES
 module.
 
@@ -71,6 +82,7 @@ Other scripts:
 
 ```bash
 pnpm run build      # compile TypeScript to dist/
+pnpm run dev        # build/watch + live-reload dev server (port 8080)
 pnpm run typecheck  # type-check only
 pnpm test           # build, then run the logic tests (Node test runner)
 ```

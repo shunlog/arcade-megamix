@@ -9,11 +9,13 @@
     "build": "tsc",
     "watch": "tsc --watch",
     "serve": "node serve.mjs",
+    "dev": "tsc --watch --preserveWatchOutput & live-server --port=8080 --watch=dist,index.html,embed.html --open=/",
     "start": "pnpm run build && node serve.mjs",
     "typecheck": "tsc --noEmit",
     "test": "tsc && node --test test"
   },
   "devDependencies": {
+    "live-server": "^1.2.2",
     "typescript": "^5.5.0"
   }
 }
