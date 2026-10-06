@@ -1,2 +1,5 @@
+packages:
+  - '.'
+
 allowBuilds:
-  fsevents: set this to true or false
+  fsevents: false
