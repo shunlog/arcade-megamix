@@ -2,6 +2,7 @@
 
 import { GRAY, PixelFont, SCREEN_H, SCREEN_W, WHITE } from "./config.js";
 import type { MiniGame } from "./games/index.js";
+import { drawOverlay } from "./draw.js";
 import { Keys, type KeyCode } from "./keys.js";
 
 export type StandaloneCtor = new (width: number, height: number) => MiniGame;
@@ -50,21 +51,12 @@ export class StandaloneRunner {
     ctx.drawImage(score, this.width - score.width - 16, 12);
 
     if (!this.game.alive) {
-      this.drawCentered(ctx, this.big, "GAME OVER", WHITE, this.height / 2 - 40);
-      this.drawCentered(ctx, this.small, "R = RESTART    Q = MENU", GRAY, this.height / 2 + 40);
+      drawOverlay(ctx, this.width, this.height, this.big, this.small, "GAME OVER", [
+        { text: `FINAL SCORE ${this.game.score}`, color: GRAY },
+        { text: "R = RESTART    Q = MENU", color: GRAY },
+      ]);
     }
     ctx.restore();
-  }
-
-  private drawCentered(
-    ctx: CanvasRenderingContext2D,
-    font: PixelFont,
-    text: string,
-    color: readonly [number, number, number],
-    y: number,
-  ): void {
-    const surface = font.render(text, color);
-    ctx.drawImage(surface, Math.floor((this.width - surface.width) / 2), y);
   }
 }
 

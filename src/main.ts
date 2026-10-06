@@ -4,15 +4,16 @@
 // full "megamix" rotation or open a sub-menu that launches a single
 // mini-game. There is no URL-based game selection any more.
 
-import { BLACK, GRAY, PixelFont, SCREEN_H, SCREEN_W, WHITE } from "./config.js";
+import { GRAY, PixelFont, SCREEN_H, SCREEN_W } from "./config.js";
 import { App } from "./app.js";
+import { drawOverlay } from "./draw.js";
 import { GAME_ENTRIES } from "./games/index.js";
 import { Menu } from "./menu.js";
 import { StandaloneRunner } from "./runner.js";
 import { Buzzer } from "./sound.js";
 import { Keys, type KeyCode } from "./keys.js";
 
-type Screen = "menu" | "minigames" | "megamix" | "standalone";
+type Screen = "menu" | "minigames" | "difficulty" | "megamix" | "standalone";
 
 function isTypingKey(code: string): boolean {
   return code === Keys.UP || code === Keys.DOWN || code === Keys.LEFT || code === Keys.RIGHT || code === Keys.SPACE;
@@ -50,8 +51,8 @@ function start(): void {
     paused = false;
   };
 
-  const startMegamix = (): void => {
-    app = new App(SCREEN_W, SCREEN_H);
+  const startMegamix = (startLevel: number): void => {
+    app = new App(SCREEN_W, SCREEN_H, startLevel);
     runner = null;
     paused = false;
     screen = "megamix";
@@ -68,12 +69,25 @@ function start(): void {
   const mainMenu = new Menu(
     "ARCADE MEGAMIX",
     [
-      { label: "PLAY", onSelect: startMegamix },
+      { label: "PLAY", onSelect: () => (screen = "difficulty") },
       { label: "MINI-GAMES", onSelect: () => (screen = "minigames") },
     ],
     big,
     small,
     "SELECT MODE",
+  );
+
+  const difficultyMenu = new Menu(
+    "DIFFICULTY",
+    [
+      { label: "EASY", onSelect: () => startMegamix(0) },
+      { label: "MEDIUM", onSelect: () => startMegamix(3) },
+      { label: "HARD", onSelect: () => startMegamix(6) },
+      { label: "BACK", onSelect: showMenu },
+    ],
+    big,
+    small,
+    "STARTING LEVEL 0 / 3 / 6",
   );
 
   const miniMenu = new Menu(
@@ -89,7 +103,14 @@ function start(): void {
     small,
   );
 
-  const activeMenu = (): Menu | null => (screen === "menu" ? mainMenu : screen === "minigames" ? miniMenu : null);
+  const activeMenu = (): Menu | null =>
+    screen === "menu"
+      ? mainMenu
+      : screen === "minigames"
+        ? miniMenu
+        : screen === "difficulty"
+          ? difficultyMenu
+          : null;
 
   const keyDown = (event: KeyboardEvent): void => {
     const code = event.code as KeyCode;
@@ -98,7 +119,7 @@ function start(): void {
 
     const menu = activeMenu();
     if (menu !== null) {
-      if (screen === "minigames" && code === Keys.ESC) {
+      if ((screen === "minigames" || screen === "difficulty") && code === Keys.ESC) {
         showMenu();
         return;
       }
@@ -175,12 +196,9 @@ function start(): void {
   canvas.addEventListener("click", click);
 
   const drawPause = (): void => {
-    ctx.fillStyle = `rgba(${BLACK[0]},${BLACK[1]},${BLACK[2]},0.6)`;
-    ctx.fillRect(0, 0, SCREEN_W, SCREEN_H);
-    const title = big.render("PAUSED", WHITE);
-    ctx.drawImage(title, Math.floor((SCREEN_W - title.width) / 2), SCREEN_H / 2 - 40);
-    const hint = small.render("P OR ESC RESUME    Q QUIT TO MENU", GRAY);
-    ctx.drawImage(hint, Math.floor((SCREEN_W - hint.width) / 2), SCREEN_H / 2 + 30);
+    drawOverlay(ctx, SCREEN_W, SCREEN_H, big, small, "PAUSED", [
+      { text: "P / ESC = RESUME    Q = MENU", color: GRAY },
+    ]);
   };
 
   let last = performance.now();
@@ -193,6 +211,8 @@ function start(): void {
       mainMenu.draw(ctx, SCREEN_W, SCREEN_H);
     } else if (screen === "minigames") {
       miniMenu.draw(ctx, SCREEN_W, SCREEN_H);
+    } else if (screen === "difficulty") {
+      difficultyMenu.draw(ctx, SCREEN_W, SCREEN_H);
     } else if (screen === "megamix") {
       if (!paused) {
         const tick = app!.update(dt);

@@ -32,6 +32,9 @@ shorter ticks. These are configured in `config.ts` as `LEVEL_START`,
 `LEVEL_STEP` and `LEVEL_FLOOR` (and the tick counts as `PLAY_TICKS` /
 `PAUSE_TICKS`).
 
+The difficulty chosen at start-up decides which level the run begins on, so it
+jumps straight into the faster ticks.
+
 The current level is shown top-left (with the active mini-game's name beneath
 it). Your total score is shown top-right in a big blocky pixel font.
 
@@ -93,12 +96,16 @@ pnpm test           # build, then run the logic tests (Node test runner)
 
 The game opens on a start-up screen with two options:
 
-- **PLAY** starts the full rotation described above.
+- **PLAY** opens a difficulty picker before starting the full rotation:
+  - **EASY** starts at level 0 (10s per level),
+  - **MEDIUM** starts at level 3 (7s per level),
+  - **HARD** starts at level 6 (4s per level).
+  - **BACK** returns to the main menu.
 - **MINI-GAMES** opens a picker with one button per mini-game plus **BACK**.
 
 Navigate with the arrow keys / WASD and confirm with Enter or Space, or just
-click the buttons. There is no URL-based game selection; everything happens in
-the in-game menus.
+click the buttons. **Esc** backs out of the difficulty and mini-game menus.
+There is no URL-based game selection; everything happens in the in-game menus.
 
 ## Controls
 
@@ -111,8 +118,8 @@ the in-game menus.
 | Pac-Man | Arrows / WASD to move. |
 
 **P** or **Esc** pauses while a game is running; while paused, **Q** quits
-back to the start-up menu. After a game over, **R** restarts and **Esc**
-returns to the start-up menu.
+back to the start-up menu. After a game over, **R** restarts and **Q** returns
+to the start-up menu.
 
 ## Scoring
 

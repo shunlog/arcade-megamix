@@ -103,6 +103,16 @@ test("timeToSwitch counts down to the tick-7 switch", () => {
   assert.ok(Math.abs(rm.timeToSwitch - 6 * rm.tickDuration) < 1e-9);
 });
 
+test("difficulty sets the round's starting level and survives a restart", () => {
+  const app = new App(800, 600, 3);
+  assert.equal(app.round.level, 3);
+  assert.equal(app.round.duration, 7); // 10 - 3 * LEVEL_STEP
+
+  app.restart();
+  assert.equal(app.round.level, 3);
+  assert.equal(app.round.duration, 7);
+});
+
 test("app cycles through every game and adds asteroids on wrap", () => {
   const app = new App();
   const asteroids = app.games.find((g) => g instanceof AsteroidsGame);

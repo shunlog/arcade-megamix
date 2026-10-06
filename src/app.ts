@@ -15,6 +15,7 @@ import {
 } from "./config.js";
 import { GAME_ORDER, type MiniGame } from "./games/index.js";
 import { AsteroidsGame } from "./games/asteroids.js";
+import { drawOverlay } from "./draw.js";
 import { Keys, type KeyCode } from "./keys.js";
 
 /** What the rotation is doing at the current tick. */
@@ -45,7 +46,9 @@ export class RoundManager {
     public readonly start = LEVEL_START,
     public readonly step = LEVEL_STEP,
     public readonly floor = LEVEL_FLOOR,
+    startLevel = 0,
   ) {
+    this.level = startLevel;
     this.remaining = this.tickDuration;
   }
 
@@ -123,14 +126,17 @@ export class App {
   games: MiniGame[];
   round: RoundManager;
   gameOver = false;
+  /** Level the run starts on, set by the chosen difficulty. */
+  readonly startLevel: number;
 
-  constructor(width: number = SCREEN_W, height: number = SCREEN_H) {
+  constructor(width: number = SCREEN_W, height: number = SCREEN_H, startLevel = 0) {
     this.width = width;
     this.height = height;
     this.big = new PixelFont(3);
     this.small = new PixelFont(2);
+    this.startLevel = startLevel;
     this.games = GAME_ORDER.map((cls) => new cls(width, height));
-    this.round = new RoundManager(this.games.length);
+    this.round = new RoundManager(this.games.length, LEVEL_START, LEVEL_STEP, LEVEL_FLOOR, startLevel);
   }
 
   get active(): MiniGame {
@@ -143,7 +149,7 @@ export class App {
 
   restart(): void {
     this.games = GAME_ORDER.map((cls) => new cls(this.width, this.height));
-    this.round = new RoundManager(this.games.length);
+    this.round = new RoundManager(this.games.length, LEVEL_START, LEVEL_STEP, LEVEL_FLOOR, this.startLevel);
     this.gameOver = false;
   }
 
@@ -210,21 +216,11 @@ export class App {
     }
 
     if (this.gameOver) {
-      this.drawCentered(ctx, this.big, "GAME OVER", WHITE, this.height / 2 - 60);
-      this.drawCentered(ctx, this.small, `FINAL SCORE ${this.totalScore}`, GRAY, this.height / 2);
-      this.drawCentered(ctx, this.small, "R = RESTART    Q = MENU", GRAY, this.height / 2 + 40);
+      drawOverlay(ctx, this.width, this.height, this.big, this.small, "GAME OVER", [
+        { text: `FINAL SCORE ${this.totalScore}`, color: GRAY },
+        { text: "R = RESTART    Q = MENU", color: GRAY },
+      ]);
     }
-  }
-
-  private drawCentered(
-    ctx: CanvasRenderingContext2D,
-    font: PixelFont,
-    text: string,
-    color: readonly [number, number, number],
-    y: number,
-  ): void {
-    const surface = font.render(text, color);
-    ctx.drawImage(surface, Math.floor((this.width - surface.width) / 2), y);
   }
 
   /**

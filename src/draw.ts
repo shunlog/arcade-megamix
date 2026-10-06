@@ -1,7 +1,41 @@
 // Drawing helpers for the canvas port of pygame's primitives.
 
-import type { Color } from "./config.js";
-import { rgb } from "./config.js";
+import type { Color, PixelFont } from "./config.js";
+import { WHITE, rgb } from "./config.js";
+
+/** One small line of text in a pause / game-over overlay. */
+export interface OverlayLine {
+  text: string;
+  color: Color;
+}
+
+/**
+ * Draw the dimmed, centred overlay shared by the pause screen and the
+ * game-over screens. Keeping the layout and title/line placement here means
+ * every overlay looks the same no matter where it is triggered from.
+ */
+export function drawOverlay(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  big: PixelFont,
+  small: PixelFont,
+  title: string,
+  lines: readonly OverlayLine[],
+): void {
+  ctx.fillStyle = "rgba(8, 8, 16, 0.6)";
+  ctx.fillRect(0, 0, width, height);
+
+  const titleSurface = big.render(title, WHITE);
+  ctx.drawImage(titleSurface, Math.floor((width - titleSurface.width) / 2), height / 2 - 60);
+
+  let y = height / 2;
+  for (const line of lines) {
+    const surface = small.render(line.text, line.color);
+    ctx.drawImage(surface, Math.floor((width - surface.width) / 2), y);
+    y += 40;
+  }
+}
 
 export function fillCircle(
   ctx: CanvasRenderingContext2D,
