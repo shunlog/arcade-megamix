@@ -9,6 +9,7 @@ import { App } from "./app.js";
 import { GAME_ENTRIES } from "./games/index.js";
 import { Menu } from "./menu.js";
 import { StandaloneRunner } from "./runner.js";
+import { Buzzer } from "./sound.js";
 import { Keys, type KeyCode } from "./keys.js";
 
 type Screen = "menu" | "minigames" | "megamix" | "standalone";
@@ -39,6 +40,8 @@ function start(): void {
   let app: App | null = null;
   let runner: StandaloneRunner | null = null;
   let paused = false;
+
+  const buzzer = new Buzzer();
 
   const showMenu = (): void => {
     screen = "menu";
@@ -90,6 +93,7 @@ function start(): void {
   const keyDown = (event: KeyboardEvent): void => {
     const code = event.code as KeyCode;
     if (isTypingKey(code)) event.preventDefault();
+    buzzer.resume(); // unlock audio from a user gesture
 
     const menu = activeMenu();
     if (menu !== null) {
@@ -153,6 +157,7 @@ function start(): void {
   };
 
   const click = (event: MouseEvent): void => {
+    buzzer.resume(); // unlock audio from a user gesture
     const menu = activeMenu();
     if (menu === null) return;
     const [x, y] = canvasPoint(canvas, event);
@@ -192,6 +197,12 @@ function start(): void {
       runner!.draw(ctx);
       if (paused) drawPause();
     }
+
+    // Demo buzzer: a short buzz every second while actively playing.
+    const playing =
+      (screen === "megamix" && app !== null && !app.gameOver) ||
+      (screen === "standalone" && runner !== null && runner.game.alive);
+    if (playing && !paused) buzzer.update(dt);
 
     requestAnimationFrame(frame);
   };
