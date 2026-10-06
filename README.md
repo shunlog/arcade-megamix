@@ -8,14 +8,39 @@ The mini-games rotate in this order:
 
 **Snake → Asteroids → Pong → Tron → Pac-Man → Snake → …**
 
-- The first loop gives each game **10 seconds**.
-- Every time the rotation wraps around, games get **1 second less**.
-- The round length bottoms out at **3 seconds**.
 - Each mini-game keeps its state, so you resume exactly where you left off.
 - The run ends the moment you die in *any* mini-game.
 
+### The buzz cycle
+
+A short **buzz** marks the beat of the rotation. The gap between two buzzes
+is a *tick*, and a cycle is eight ticks:
+
+- **Ticks 1-6** — you are playing. A tick lasts `level duration / 8`.
+- **Tick 7** — a big pause sign appears and the mini-game freezes.
+- **Tick 8** — the next mini-game is swapped in, still frozen, and the sign
+  becomes a play triangle.
+- **Next tick** — play starts again and the cycle repeats.
+
+The eight ticks cover the whole level duration: six play ticks plus a two-tick
+pause, so the pause is `level duration / 4` and playing is `level duration × 3/4`.
+
+Every mini-game has the same duration within a level. When you complete a
+cycle by passing through every mini-game, the level goes up and the duration
+drops by **1 second** (from 10s down to a 3s floor); a shorter duration means
+shorter ticks. These are configured in `config.ts` as `LEVEL_START`,
+`LEVEL_STEP` and `LEVEL_FLOOR` (and the tick counts as `PLAY_TICKS` /
+`PAUSE_TICKS`).
+
 The remaining time until the next switch is shown top-left. Your total score is
 shown top-right in a big blocky pixel font.
+
+### Sound
+
+The buzzes are generated with the Web Audio API in `src/sound.ts` — no audio
+files. The last two buzzes of each cycle (the pause and the incoming game) use
+a higher pitch. Browsers only allow audio after a user gesture, so the audio
+context is unlocked on the first key press or click.
 
 ## Requirements
 
@@ -111,9 +136,10 @@ serve.mjs           # zero-dependency static dev server
 src/
   main.ts           # browser entry: canvas, input, animation loop
   menu.ts           # canvas startup / mini-game menus
-  app.ts            # RoundManager + App (round timing and game switching)
+  app.ts            # RoundManager + App (tick cycle and game switching)
   runner.ts         # standalone mini-game runner
-  config.ts         # screen, palette, scoring constants, pixel font
+  sound.ts          # Web Audio buzz primitive (oscillator + gain)
+  config.ts         # screen, palette, scoring, level timing, pixel font
   keys.ts           # KeyboardEvent.code constants
   rng.ts            # random helpers (+ deterministic seeded RNG for tests)
   draw.ts           # small canvas drawing helpers

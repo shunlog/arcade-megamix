@@ -55,6 +55,7 @@ function start(): void {
     runner = null;
     paused = false;
     screen = "megamix";
+    buzzer.tick(0); // play begins on tick 0
   };
 
   const startStandalone = (ctor: (typeof GAME_ENTRIES)[number]["ctor"]): void => {
@@ -127,8 +128,12 @@ function start(): void {
         return;
       }
       if (code === Keys.R) {
-        if (screen === "megamix") app!.restart();
-        else runner!.game.reset();
+        if (screen === "megamix") {
+          app!.restart();
+          buzzer.tick(0);
+        } else {
+          runner!.game.reset();
+        }
       }
       return;
     }
@@ -189,7 +194,10 @@ function start(): void {
     } else if (screen === "minigames") {
       miniMenu.draw(ctx, SCREEN_W, SCREEN_H);
     } else if (screen === "megamix") {
-      if (!paused) app!.update(dt);
+      if (!paused) {
+        const tick = app!.update(dt);
+        if (tick >= 0) buzzer.tick(tick);
+      }
       app!.draw(ctx);
       if (paused) drawPause();
     } else {
@@ -197,12 +205,6 @@ function start(): void {
       runner!.draw(ctx);
       if (paused) drawPause();
     }
-
-    // Demo buzzer: a short buzz every second while actively playing.
-    const playing =
-      (screen === "megamix" && app !== null && !app.gameOver) ||
-      (screen === "standalone" && runner !== null && runner.game.alive);
-    if (playing && !paused) buzzer.update(dt);
 
     requestAnimationFrame(frame);
   };

@@ -15,7 +15,6 @@
 
 export class Buzzer {
   private ctx: AudioContext | null = null;
-  private elapsed = 0;
 
   /**
    * Create / resume the audio engine. Safe to call repeatedly; call it from
@@ -52,12 +51,11 @@ export class Buzzer {
     osc.stop(now + duration + 0.02);
   }
 
-  /** Advance the clock and buzz once every second. Call once per frame. */
-  update(dt: number): void {
-    this.elapsed += dt;
-    if (this.elapsed >= 1.0) {
-      this.elapsed -= 1.0;
-      this.buzz();
-    }
+  /**
+   * Buzz a rotation tick. Ticks 0-5 are the playing ticks; the final two
+   * ticks of the cycle (pause and the incoming game) use a different pitch.
+   */
+  tick(index: number): void {
+    this.buzz(index >= 6 ? 440 : 220);
   }
 }

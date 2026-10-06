@@ -43,6 +43,19 @@ export const SCORE_ASTEROID_BIG = 10;
 export const SCORE_ASTEROID_SMALL = 5;
 export const SCORE_TRON_KILL = 25;
 
+// --- Level timing -----------------------------------------------------------
+// Every mini-game shares one duration per level. The level duration covers the
+// whole cycle and is split into eight ticks: six playing ticks plus a two-tick
+// pause. Completing a full cycle through all mini-games raises the level and
+// removes LEVEL_STEP seconds, down to LEVEL_FLOOR.
+export const LEVEL_START = 10.0; // total level duration at level 0
+export const LEVEL_STEP = 1.0; // seconds removed per level
+export const LEVEL_FLOOR = 3.0; // minimum level duration
+
+export const PLAY_TICKS = 6; // playing ticks per cycle
+export const PAUSE_TICKS = 2; // pause ticks per cycle
+export const TICKS_PER_CYCLE = PLAY_TICKS + PAUSE_TICKS;
+
 /** Format a colour tuple as a canvas fillStyle string. */
 export function rgb(color: Color): string {
   return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
