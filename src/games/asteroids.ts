@@ -12,7 +12,7 @@ import {
   SHIP_WHITE,
 } from "../config.js";
 import { fillCircle, mod, strokeCircle, strokePolygon } from "../draw.js";
-import { Keys } from "../keys.js";
+import { Keys, type KeyCode } from "../keys.js";
 import { defaultRng, type Rng } from "../rng.js";
 import { MiniGame } from "./base.js";
 
@@ -42,7 +42,12 @@ export class AsteroidsGame extends MiniGame {
   static readonly ROT_SPEED = 4.0;
   static readonly THRUST = 260.0;
   static readonly FRICTION = 0.4;
-  static readonly MAX_BULLETS = 5;
+  /**
+   * Safety net only. The fire rate is governed by FIRE_COOLDOWN: with a 0.18s
+   * cooldown and a 1.2s bullet life at most ~7 bullets are ever alive, so this
+   * must stay above that or it starts blocking shots and the cadence stutters.
+   */
+  static readonly MAX_BULLETS = 8;
   static readonly FIRE_COOLDOWN = 0.18;
 
   readonly rng: Rng;
@@ -53,6 +58,8 @@ export class AsteroidsGame extends MiniGame {
   shipVy!: number;
   angle!: number;
   fireTimer!: number;
+  /** A fire press seen since the last shot, so taps are never dropped. */
+  fireQueued!: boolean;
   bullets!: Bullet[];
   asteroids!: Asteroid[];
 
@@ -70,6 +77,7 @@ export class AsteroidsGame extends MiniGame {
     this.shipVy = 0;
     this.angle = -Math.PI / 2;
     this.fireTimer = 0;
+    this.fireQueued = false;
     this.bullets = [];
     this.asteroids = [];
     this.score = 0;
@@ -107,6 +115,11 @@ export class AsteroidsGame extends MiniGame {
     }
   }
 
+  override onKeyDown(key: KeyCode): void {
+    super.onKeyDown(key);
+    if (key === Keys.SPACE) this.fireQueued = true;
+  }
+
   // -- simulation ----------------------------------------------------------
   override update(dt: number): boolean {
     if (!this.alive) return false;
@@ -136,7 +149,9 @@ export class AsteroidsGame extends MiniGame {
     this.shipY = mod(this.shipY + this.shipVy * speed * dt, this.height);
 
     this.fireTimer = Math.max(0, this.fireTimer - dt * speed);
-    if (this.pressed.has(Keys.SPACE) && this.fireTimer === 0) {
+    // Holding SPACE keeps firing at the cooldown rate; a tap is remembered
+    // until the cooldown allows it, so quick presses are not lost.
+    if ((this.pressed.has(Keys.SPACE) || this.fireQueued) && this.fireTimer <= 0) {
       this.fire();
     }
 
@@ -168,6 +183,7 @@ export class AsteroidsGame extends MiniGame {
       life: 1.2,
     });
     this.fireTimer = AsteroidsGame.FIRE_COOLDOWN;
+    this.fireQueued = false;
   }
 
   private collideBullets(): void {
