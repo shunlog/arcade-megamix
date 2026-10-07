@@ -56,6 +56,6 @@ export class Buzzer {
    * ticks of the cycle (pause and the incoming game) use a different pitch.
    */
   tick(index: number): void {
-    this.buzz(index >= 6 ? 440 : 220);
+    this.buzz(index >= 7 ? 440 : 220);
   }
 }
