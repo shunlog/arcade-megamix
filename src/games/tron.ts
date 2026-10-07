@@ -37,7 +37,7 @@ export class TronGame extends MiniGame {
   name = "TRON";
 
   static readonly CELL = 20;
-  static readonly STEP_TIME = 0.09;
+  static readonly STEP_TIME = 0.11;
   static readonly MAX_QUEUE = 2;
 
   readonly cols: number;
