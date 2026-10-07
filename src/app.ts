@@ -10,6 +10,7 @@ import {
   rgb,
   SCREEN_H,
   SCREEN_W,
+  scoreMultiplier,
   speedMultiplier,
   TICKS_PER_CYCLE,
   WHITE,
@@ -138,13 +139,17 @@ export class App {
     this.startLevel = startLevel;
     this.games = GAME_ORDER.map((cls) => new cls(width, height));
     this.round = new RoundManager(this.games.length, LEVEL_START, LEVEL_STEP, LEVEL_FLOOR, startLevel);
-    this.applySpeed();
+    this.applyMultipliers();
   }
 
-  /** Push the current level's speed multiplier onto every mini-game. */
-  private applySpeed(): void {
-    const multiplier = speedMultiplier(this.round.level);
-    for (const g of this.games) g.speedMultiplier = multiplier;
+  /** Push the current level's speed and score multipliers onto every mini-game. */
+  private applyMultipliers(): void {
+    const speed = speedMultiplier(this.round.level);
+    const score = scoreMultiplier(this.round.level);
+    for (const g of this.games) {
+      g.speedMultiplier = speed;
+      g.scoreMultiplier = score;
+    }
   }
 
   get active(): MiniGame {
@@ -158,7 +163,7 @@ export class App {
   restart(): void {
     this.games = GAME_ORDER.map((cls) => new cls(this.width, this.height));
     this.round = new RoundManager(this.games.length, LEVEL_START, LEVEL_STEP, LEVEL_FLOOR, this.startLevel);
-    this.applySpeed();
+    this.applyMultipliers();
     this.gameOver = false;
   }
 
@@ -184,8 +189,8 @@ export class App {
     if (this.gameOver) return -1;
 
     const tick = this.round.tick(dt);
-    // The level (and so the speed multiplier) may have just changed.
-    if (tick === 0) this.applySpeed();
+    // The level (and so the multipliers) may have just changed.
+    if (tick === 0) this.applyMultipliers();
     if (tick === TICKS_PER_CYCLE - 1) {
       // Swap in the incoming mini-game during the pause; play resumes on tick 0.
       this.doSwitch();
@@ -221,6 +226,10 @@ export class App {
     // top-right: big pixel score
     const score = this.big.render(String(this.totalScore).padStart(6, "0"), WHITE);
     ctx.drawImage(score, this.width - score.width - 16, 12);
+
+    // under the score: global score multiplier, e.g. "x1.1"
+    const mult = this.small.render(`x${scoreMultiplier(this.round.level).toFixed(1)}`, GRAY);
+    ctx.drawImage(mult, this.width - mult.width - 16, 12 + score.height + 6);
 
     if (!this.gameOver && this.round.phase !== "play") {
       this.drawPhaseSign(ctx, this.round.phase);

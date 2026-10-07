@@ -19,6 +19,12 @@ export abstract class MiniGame {
    * whole arcade gets faster together. Standalone runs leave it at 1.0.
    */
   speedMultiplier = 1.0;
+  /**
+   * Global score multiplier, driven by the current level (1.0 at level 0,
+   * then +0.1, +0.2, +0.3, ... per level). Every score award is scaled by it
+   * and rounded up. Standalone runs leave it at 1.0.
+   */
+  scoreMultiplier = 1.0;
 
   constructor(width: number, height: number) {
     this.width = width;
@@ -46,6 +52,6 @@ export abstract class MiniGame {
 
   // -- helpers -------------------------------------------------------------
   addScore(amount: number): void {
-    this.score += amount;
+    this.score += Math.ceil(amount * this.scoreMultiplier);
   }
 }

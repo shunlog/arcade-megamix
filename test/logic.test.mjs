@@ -11,7 +11,7 @@ import { PacmanGame } from "../dist/games/pacman.js";
 import { SnakeGame, UP } from "../dist/games/snake.js";
 import { TronGame } from "../dist/games/tron.js";
 import { seededRng } from "../dist/rng.js";
-import { speedMultiplier } from "../dist/config.js";
+import { speedMultiplier, scoreMultiplier } from "../dist/config.js";
 import { PongGame } from "../dist/games/pong.js";
 
 test("round duration shrinks per level and is capped", () => {
@@ -217,4 +217,34 @@ test("mini-game speeds scale with the multiplier", () => {
   const base = distance(1);
   assert.ok(Math.abs(distance(2) - base * 2) < 1e-6);
   assert.ok(Math.abs(distance(3) - base * 3) < 1e-6);
+});
+
+test("score multiplier grows at an accelerating rate", () => {
+  assert.equal(scoreMultiplier(0), 1.0);
+  assert.ok(Math.abs(scoreMultiplier(1) - 1.1) < 1e-9);
+  assert.ok(Math.abs(scoreMultiplier(2) - 1.3) < 1e-9);
+  assert.ok(Math.abs(scoreMultiplier(3) - 1.6) < 1e-9);
+  assert.ok(Math.abs(scoreMultiplier(4) - 2.0) < 1e-9);
+  assert.ok(Math.abs(scoreMultiplier(5) - 2.5) < 1e-9);
+  // Each step is 0.1 larger than the last.
+  for (let level = 1; level < 8; level++) {
+    const step = scoreMultiplier(level) - scoreMultiplier(level - 1);
+    assert.ok(Math.abs(step - 0.1 * level) < 1e-9);
+  }
+});
+
+test("score awards are scaled and rounded up", () => {
+  const pac = new PacmanGame(800, 600, seededRng(5));
+  pac.scoreMultiplier = 1.6;
+  pac.addScore(1);
+  assert.equal(pac.score, 2); // ceil(1.6)
+  pac.addScore(5);
+  assert.equal(pac.score, 10); // ceil(8.0) added to 2
+});
+
+test("the app gives every mini-game the current level's score multiplier", () => {
+  const app = new App(800, 600, 3);
+  for (const g of app.games) {
+    assert.ok(Math.abs(g.scoreMultiplier - 1.6) < 1e-9);
+  }
 });

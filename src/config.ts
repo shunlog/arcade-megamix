@@ -67,6 +67,19 @@ export function speedMultiplier(level: number): number {
   return 1.0 + Math.max(0, level) * SPEED_PER_LEVEL;
 }
 
+// --- Global score multiplier -------------------------------------------------
+// Every point award is scaled by this factor and rounded up to an integer. It
+// starts at 1.0 and grows at an accelerating rate: the level-1 step adds 0.1,
+// the level-2 step adds 0.2, the level-3 step adds 0.3, and so on. So the
+// value is 1.0, 1.1, 1.3, 1.6, 2.0, 2.5, ...
+export const SCORE_PER_LEVEL_STEP = 0.1;
+
+/** Score multiplier for a given level. */
+export function scoreMultiplier(level: number): number {
+  const n = Math.max(0, level);
+  return 1.0 + (SCORE_PER_LEVEL_STEP * (n * (n + 1))) / 2;
+}
+
 /** Format a colour tuple as a canvas fillStyle string. */
 export function rgb(color: Color): string {
   return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
