@@ -37,7 +37,7 @@ export const PELLET: Color = [240, 210, 160];
 // Pac-Man pellet is the baseline: 1 point.
 export const SCORE_PAC_PELLET = 1;
 export const SCORE_SNAKE_APPLE = 5;
-export const SCORE_PONG_HIT = 1;
+export const SCORE_PONG_HIT = 5;
 export const SCORE_PONG_GOAL = 10;
 export const SCORE_ASTEROID_BIG = 10;
 export const SCORE_ASTEROID_SMALL = 5;
