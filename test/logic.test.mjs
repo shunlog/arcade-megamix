@@ -13,6 +13,7 @@ import { TronGame } from "../dist/games/tron.js";
 import { seededRng } from "../dist/rng.js";
 import { speedMultiplier, scoreMultiplier } from "../dist/config.js";
 import { PongGame } from "../dist/games/pong.js";
+import { StandaloneRunner } from "../dist/runner.js";
 
 test("round duration shrinks per level and is capped", () => {
   const rm = new RoundManager(5);
@@ -129,6 +130,64 @@ test("app cycles through every game and adds asteroids on wrap", () => {
   assert.equal(app.round.index, 0);
   assert.equal(seen[0], seen[seen.length - 1]);
   assert.equal(asteroids.asteroids.length, rocks + 2);
+});
+
+test("app gives pong an extra ball on every level wrap", () => {
+  const app = new App();
+  const pong = app.games.find((g) => g instanceof PongGame);
+  const balls = pong.balls.length;
+
+  for (let i = 0; i < GAME_ORDER.length; i++) app.doSwitch();
+  assert.equal(pong.balls.length, balls + 1);
+});
+
+test("app gives snake an extra apple on every level wrap", () => {
+  const app = new App();
+  const snake = app.games.find((g) => g instanceof SnakeGame);
+  const apples = snake.apples.length;
+
+  for (let i = 0; i < GAME_ORDER.length; i++) app.doSwitch();
+  assert.equal(snake.apples.length, apples + 1);
+});
+
+test("snake replaces an eaten apple without losing the extras", () => {
+  const snake = new SnakeGame(300, 200, seededRng(3));
+  snake.addApple();
+  assert.equal(snake.apples.length, 2);
+
+  const [hx, hy] = snake.snake[0];
+  snake.apples[0] = [hx + 1, hy];
+  snake.step();
+  assert.equal(snake.apples.length, 2); // one eaten, one spawned
+});
+
+test("pong ends only once every ball has been lost", () => {
+  const pong = new PongGame(800, 600, seededRng(1));
+  assert.equal(pong.balls.length, 1);
+  pong.addBall();
+  assert.equal(pong.balls.length, 2);
+
+  pong.balls[0].x = -100;
+  assert.equal(pong.update(1 / 60), true); // one ball still in play
+  assert.equal(pong.balls.length, 1);
+  assert.equal(pong.alive, true);
+
+  pong.balls[0].x = -100;
+  assert.equal(pong.update(1 / 60), false); // the last ball is lost
+  assert.equal(pong.alive, false);
+});
+
+test("standalone pong spawns an extra ball every five seconds", () => {
+  const runner = new StandaloneRunner(PongGame, 800, 600);
+  const pong = runner.game;
+  // Park the opening ball so it cannot be lost during the wait.
+  pong.balls[0].vx = 0;
+  pong.balls[0].vy = 0;
+  assert.equal(pong.balls.length, 1);
+
+  for (let i = 0; i < 5 * 60 + 2; i++) runner.update(1 / 60);
+  assert.equal(pong.balls.length, 2);
+  assert.equal(pong.alive, true);
 });
 
 test("snake rejects reversals and can be buffered", () => {

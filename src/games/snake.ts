@@ -40,7 +40,8 @@ export class SnakeGame extends MiniGame {
   direction!: Vec;
   pending!: Vec[];
   moveTimer!: number;
-  apple!: Vec;
+  /** Every apple currently on the board. Eaten ones are replaced. */
+  apples!: Vec[];
 
   constructor(width: number, height: number, rng: Rng = defaultRng()) {
     super(width, height);
@@ -61,7 +62,26 @@ export class SnakeGame extends MiniGame {
     this.moveTimer = 0;
     this.score = 0;
     this.alive = true;
-    this.apple = this.randomFreeCell();
+    this.apples = [];
+    this.addApple();
+  }
+
+  /**
+   * Drop another apple on a random free cell. Called once per level and every
+   * time an apple is eaten, so the count can only grow between resets.
+   */
+  addApple(): void {
+    this.apples.push(this.randomFreeCell());
+  }
+
+  // -- compatibility getter ------------------------------------------------
+  // The first apple is exposed under the old single-apple name.
+  get apple(): Vec {
+    return this.apples[0];
+  }
+
+  set apple(value: Vec) {
+    this.apples[0] = value;
   }
 
   // -- input ---------------------------------------------------------------
@@ -112,7 +132,8 @@ export class SnakeGame extends MiniGame {
       return;
     }
 
-    const eating = nx === this.apple[0] && ny === this.apple[1];
+    const eatingIndex = this.apples.findIndex(([ax, ay]) => ax === nx && ay === ny);
+    const eating = eatingIndex >= 0;
     const body = new Set(this.snake.map(([x, y]) => `${x},${y}`));
     if (!eating) body.delete(`${this.snake[this.snake.length - 1][0]},${this.snake[this.snake.length - 1][1]}`);
     if (body.has(`${nx},${ny}`)) {
@@ -124,7 +145,8 @@ export class SnakeGame extends MiniGame {
     if (eating) {
       this.addScore(SCORE_SNAKE_APPLE);
       this.sfx("apple");
-      this.apple = this.randomFreeCell();
+      this.apples.splice(eatingIndex, 1);
+      this.addApple();
     } else {
       this.snake.pop();
     }
@@ -143,7 +165,9 @@ export class SnakeGame extends MiniGame {
   }
 
   private randomFreeCell(): Vec {
-    const occupied = new Set(this.snake.map(([x, y]) => `${x},${y}`));
+    const occupied = new Set<string>();
+    for (const [x, y] of this.snake) occupied.add(`${x},${y}`);
+    for (const [x, y] of this.apples) occupied.add(`${x},${y}`);
     const free: Vec[] = [];
     for (let y = 0; y < this.rows; y++) {
       for (let x = 0; x < this.cols; x++) {
@@ -175,7 +199,8 @@ export class SnakeGame extends MiniGame {
     fillCircle(ctx, DARK, cx + dx * 3 + ox, cy + dy * 3 + oy, 2);
     fillCircle(ctx, DARK, cx + dx * 3 - ox, cy + dy * 3 - oy, 2);
 
-    const [ax, ay] = this.apple;
-    fillCircle(ctx, APPLE_RED, ax * size + Math.floor(size / 2), ay * size + Math.floor(size / 2), size / 2 - 2);
+    for (const [ax, ay] of this.apples) {
+      fillCircle(ctx, APPLE_RED, ax * size + Math.floor(size / 2), ay * size + Math.floor(size / 2), size / 2 - 2);
+    }
   }
 }

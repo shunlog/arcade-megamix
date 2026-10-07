@@ -23,6 +23,13 @@ interface Rect {
   h: number;
 }
 
+interface Ball {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+}
+
 function collides(a: Rect, b: Rect): boolean {
   return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 }
@@ -36,15 +43,15 @@ export class PongGame extends MiniGame {
   static readonly BALL_SIZE = 12;
   static readonly BALL_SPEED = 360.0;
   static readonly AI_SPEED = 300.0;
+  /** Seconds between bonus balls while Pong runs as a standalone game. */
+  static readonly BALL_SPAWN_INTERVAL = 5.0;
 
   readonly rng: Rng;
 
   playerY!: number;
   aiY!: number;
-  ballX!: number;
-  ballY!: number;
-  ballVx!: number;
-  ballVy!: number;
+  /** Every ball currently in play. The run ends only when this is empty. */
+  balls!: Ball[];
 
   constructor(width: number, height: number, rng: Rng = defaultRng()) {
     super(width, height);
@@ -58,15 +65,53 @@ export class PongGame extends MiniGame {
     this.aiY = this.height / 2 - PongGame.PADDLE_H / 2;
     this.score = 0;
     this.alive = true;
-    this.serve(this.rng.choice([-1, 1]));
+    this.balls = [];
+    this.addBall();
   }
 
-  private serve(direction: number): void {
-    this.ballX = this.width / 2;
-    this.ballY = this.height / 2;
-    const angle = this.rng.uniform(-0.5, 0.5);
-    this.ballVx = PongGame.BALL_SPEED * direction;
-    this.ballVy = PongGame.BALL_SPEED * angle;
+  /**
+   * Spawn an extra ball at the centre of the field. A random serve direction
+   * is used unless one is given (e.g. after a goal). Called on every new
+   * level, and periodically while Pong runs on its own.
+   */
+  addBall(direction?: number): void {
+    const dir = direction ?? this.rng.choice([-1, 1]);
+    this.balls.push(this.makeBall(dir));
+  }
+
+  private makeBall(direction: number): Ball {
+    return {
+      x: this.width / 2,
+      y: this.height / 2,
+      vx: PongGame.BALL_SPEED * direction,
+      vy: PongGame.BALL_SPEED * this.rng.uniform(-0.5, 0.5),
+    };
+  }
+
+  /** Re-serve a ball from the centre, heading in the given direction. */
+  private serve(ball: Ball, direction: number): void {
+    ball.x = this.width / 2;
+    ball.y = this.height / 2;
+    ball.vx = PongGame.BALL_SPEED * direction;
+    ball.vy = PongGame.BALL_SPEED * this.rng.uniform(-0.5, 0.5);
+  }
+
+  // -- compatibility getters -----------------------------------------------
+  // The first ball is exposed under the old single-ball names.
+  get ballX(): number {
+    return this.balls[0].x;
+  }
+
+  get ballY(): number {
+    return this.balls[0].y;
+  }
+
+  get ballVx(): number {
+    return this.balls[0].vx;
+  }
+
+  get ballVy(): number {
+    return this.balls[0].vy;
   }
 
   // -- simulation ----------------------------------------------------------
@@ -83,35 +128,53 @@ export class PongGame extends MiniGame {
     }
     this.playerY = clamp(this.playerY, 0, this.height - PongGame.PADDLE_H);
 
-    // Simple tracking AI with a capped speed.
-    const target = this.ballY - PongGame.PADDLE_H / 2;
-    const diff = target - this.aiY;
+    // Simple tracking AI: chase whichever ball is closest to it.
+    const target = this.nearestBall();
+    const targetY = target === null ? this.height / 2 : target.y;
+    const diff = targetY - PongGame.PADDLE_H / 2 - this.aiY;
     const step = clamp(diff, -PongGame.AI_SPEED * speed * dt, PongGame.AI_SPEED * speed * dt);
     this.aiY = clamp(this.aiY + step, 0, this.height - PongGame.PADDLE_H);
 
-    this.ballX += this.ballVx * speed * dt;
-    this.ballY += this.ballVy * speed * dt;
+    this.balls = this.balls.filter((ball) => this.updateBall(ball, speed, dt));
 
-    if (this.ballY <= 0 || this.ballY + PongGame.BALL_SIZE >= this.height) {
-      this.ballVy *= -1;
-      this.ballY = clamp(this.ballY, 0, this.height - PongGame.BALL_SIZE);
-      this.sfx("wall");
-    }
-
-    this.collidePaddles();
-
-    if (this.ballX + PongGame.BALL_SIZE < 0) {
-      this.alive = false;
-    } else if (this.ballX > this.width) {
-      this.addScore(SCORE_PONG_GOAL);
-      this.sfx("goal");
-      this.serve(-1);
-    }
+    // The run is over once every ball has slipped past the player.
+    if (this.balls.length === 0) this.alive = false;
     return this.alive;
   }
 
-  private collidePaddles(): void {
-    const ball: Rect = { x: this.ballX, y: this.ballY, w: PongGame.BALL_SIZE, h: PongGame.BALL_SIZE };
+  /** Float one ball for a frame. Returns false once it is lost off the left. */
+  private updateBall(ball: Ball, speed: number, dt: number): boolean {
+    ball.x += ball.vx * speed * dt;
+    ball.y += ball.vy * speed * dt;
+
+    if (ball.y <= 0 || ball.y + PongGame.BALL_SIZE >= this.height) {
+      ball.vy *= -1;
+      ball.y = clamp(ball.y, 0, this.height - PongGame.BALL_SIZE);
+      this.sfx("wall");
+    }
+
+    this.collidePaddles(ball);
+
+    if (ball.x + PongGame.BALL_SIZE < 0) return false;
+    if (ball.x > this.width) {
+      this.addScore(SCORE_PONG_GOAL);
+      this.sfx("goal");
+      this.serve(ball, -1);
+    }
+    return true;
+  }
+
+  /** The ball furthest to the right, i.e. the one about to reach the AI. */
+  private nearestBall(): Ball | null {
+    let best: Ball | null = null;
+    for (const ball of this.balls) {
+      if (best === null || ball.x > best.x) best = ball;
+    }
+    return best;
+  }
+
+  private collidePaddles(ball: Ball): void {
+    const rect: Rect = { x: ball.x, y: ball.y, w: PongGame.BALL_SIZE, h: PongGame.BALL_SIZE };
     const player: Rect = { x: 20, y: this.playerY, w: PongGame.PADDLE_W, h: PongGame.PADDLE_H };
     const ai: Rect = {
       x: this.width - 20 - PongGame.PADDLE_W,
@@ -120,23 +183,23 @@ export class PongGame extends MiniGame {
       h: PongGame.PADDLE_H,
     };
 
-    if (this.ballVx < 0 && collides(ball, player)) {
-      this.ballX = player.x + player.w;
-      this.bounce((this.ballY - this.playerY) / PongGame.PADDLE_H - 0.5);
+    if (ball.vx < 0 && collides(rect, player)) {
+      ball.x = player.x + player.w;
+      this.bounce(ball, (ball.y - this.playerY) / PongGame.PADDLE_H - 0.5);
       this.addScore(SCORE_PONG_HIT);
       this.sfx("paddle");
-    } else if (this.ballVx > 0 && collides(ball, ai)) {
-      this.ballX = ai.x - PongGame.BALL_SIZE;
-      this.bounce((this.ballY - this.aiY) / PongGame.PADDLE_H - 0.5);
+    } else if (ball.vx > 0 && collides(rect, ai)) {
+      ball.x = ai.x - PongGame.BALL_SIZE;
+      this.bounce(ball, (ball.y - this.aiY) / PongGame.PADDLE_H - 0.5);
       this.sfx("paddleCpu");
     }
   }
 
-  private bounce(offset: number): void {
-    this.ballVx *= -1;
-    this.ballVy = offset * PongGame.BALL_SPEED * 1.4;
-    if (Math.abs(this.ballVy) < 40) {
-      this.ballVy = this.ballVy >= 0 ? 40 : -40;
+  private bounce(ball: Ball, offset: number): void {
+    ball.vx *= -1;
+    ball.vy = offset * PongGame.BALL_SPEED * 1.4;
+    if (Math.abs(ball.vy) < 40) {
+      ball.vy = ball.vy >= 0 ? 40 : -40;
     }
   }
 
@@ -157,6 +220,8 @@ export class PongGame extends MiniGame {
       PongGame.PADDLE_W,
       PongGame.PADDLE_H,
     );
-    fillRect(ctx, PONG_WHITE, this.ballX, this.ballY, PongGame.BALL_SIZE, PongGame.BALL_SIZE);
+    for (const ball of this.balls) {
+      fillRect(ctx, PONG_WHITE, ball.x, ball.y, PongGame.BALL_SIZE, PongGame.BALL_SIZE);
+    }
   }
 }

@@ -2,6 +2,7 @@
 
 import { GRAY, PixelFont, SCREEN_H, SCREEN_W, WHITE } from "./config.js";
 import type { MiniGame } from "./games/index.js";
+import { PongGame } from "./games/pong.js";
 import { drawOverlay } from "./draw.js";
 import { Keys, type KeyCode } from "./keys.js";
 
@@ -13,6 +14,11 @@ export class StandaloneRunner {
   readonly big = new PixelFont(3);
   readonly small = new PixelFont(2);
   readonly game: MiniGame;
+  /**
+   * Countdown to Pong's next bonus ball while running standalone. Only used
+   * when the wrapped mini-game is a PongGame; reset with the game.
+   */
+  private ballTimer = PongGame.BALL_SPAWN_INTERVAL;
 
   constructor(gameCls: StandaloneCtor, width = SCREEN_W, height = SCREEN_H) {
     this.width = width;
@@ -25,6 +31,7 @@ export class StandaloneRunner {
     if (key === Keys.ESC) return false;
     if (key === Keys.R && !this.game.alive) {
       this.game.reset();
+      this.ballTimer = PongGame.BALL_SPAWN_INTERVAL;
       return true;
     }
     this.game.onKeyDown(key);
@@ -36,7 +43,17 @@ export class StandaloneRunner {
   }
 
   update(dt: number): void {
-    if (this.game.alive) this.game.update(dt);
+    if (!this.game.alive) return;
+    this.game.update(dt);
+
+    // Standalone Pong keeps growing: a fresh ball every few seconds.
+    if (this.game instanceof PongGame && this.game.alive) {
+      this.ballTimer -= dt;
+      while (this.ballTimer <= 0) {
+        this.ballTimer += PongGame.BALL_SPAWN_INTERVAL;
+        this.game.addBall();
+      }
+    }
   }
 
   draw(ctx: CanvasRenderingContext2D): void {

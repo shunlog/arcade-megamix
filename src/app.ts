@@ -18,6 +18,8 @@ import {
 } from "./config.js";
 import { GAME_ORDER, type MiniGame } from "./games/index.js";
 import { AsteroidsGame } from "./games/asteroids.js";
+import { PongGame } from "./games/pong.js";
+import { SnakeGame } from "./games/snake.js";
 import { drawOverlay } from "./draw.js";
 import { Keys, type KeyCode } from "./keys.js";
 
@@ -175,6 +177,10 @@ export class App {
     if (wrapped) {
       for (const g of this.games) {
         if (g instanceof AsteroidsGame) g.addWave(2);
+        // Pong gains a ball each level, so later levels get busier.
+        if (g instanceof PongGame) g.addBall();
+        // Snake gains an extra apple each level, on top of the existing one.
+        if (g instanceof SnakeGame) g.addApple();
       }
     }
     // Drop held keys so a key held through the switch doesn't stick.
