@@ -19,6 +19,9 @@
 
 /** Every one-shot effect the arcade can trigger. */
 export type Sfx =
+  // rotation ticks
+  | "tick"
+  | "tickFinal"
   // menus / shell
   | "menuMove"
   | "menuSelect"
@@ -45,7 +48,7 @@ export type Sfx =
   | "shoot"
   | "explode";
 
-/** Peak gain of the loud rotation tick; effects stay far below this. */
+/** Reference gain for the rotation tick; effects stay far below this. */
 const TICK_VOLUME = 0.4;
 
 export class Buzzer {
@@ -99,23 +102,31 @@ export class Buzzer {
     osc.stop(now + duration + 0.02);
   }
 
-  /** Play a single short buzz (a square wave with a snappy envelope). */
-  buzz(freq = 220, duration = 0.08, volume = 0.15): void {
-    this.tone(freq, duration, volume);
-  }
-
   /**
    * Buzz a rotation tick. Ticks 0-5 are the playing ticks; the final two
    * ticks of the cycle (pause and the incoming game) use a different pitch.
    * These are the loudest sounds in the mix by design.
    */
   tick(index: number): void {
-    this.buzz(index >= 7 ? 440 : 220, 0.09, TICK_VOLUME);
+    this.sfx(index >= 7 ? "tickFinal" : "tick");
   }
 
   /** Play a named mini-game / menu effect. */
   sfx(name: Sfx): void {
     switch (name) {
+      // -- rotation ticks --------------------------------------------------
+      // A soft marimba-style blip: a triangle "body" with a gentle downward
+      // sweep, plus a quiet sine overtone that fades faster than the body.
+      // Triangle/sine keep the beat round instead of buzzy.
+      case "tick":
+        this.tone(587, 0.07, TICK_VOLUME * 0.6, "triangle", 0, 523);
+        this.tone(1175, 0.05, 0.06, "sine");
+        break;
+      case "tickFinal":
+        this.tone(880, 0.09, TICK_VOLUME * 0.6, "triangle", 0, 784);
+        this.tone(1760, 0.06, 0.06, "sine");
+        break;
+
       // -- shell -----------------------------------------------------------
       case "menuMove":
         this.tone(660, 0.045, 0.06, "square");
@@ -167,7 +178,7 @@ export class Buzzer {
       // -- pac-man ---------------------------------------------------------
       case "pellet":
         // Short and quiet: this fires very often.
-        this.tone(720, 0.035, 0.05, "triangle");
+        this.tone(720, 0.035, 0.055, "triangle");
         break;
 
       // -- snake -----------------------------------------------------------
