@@ -10,6 +10,7 @@ import {
   rgb,
   SCREEN_H,
   SCREEN_W,
+  speedMultiplier,
   TICKS_PER_CYCLE,
   WHITE,
 } from "./config.js";
@@ -137,6 +138,13 @@ export class App {
     this.startLevel = startLevel;
     this.games = GAME_ORDER.map((cls) => new cls(width, height));
     this.round = new RoundManager(this.games.length, LEVEL_START, LEVEL_STEP, LEVEL_FLOOR, startLevel);
+    this.applySpeed();
+  }
+
+  /** Push the current level's speed multiplier onto every mini-game. */
+  private applySpeed(): void {
+    const multiplier = speedMultiplier(this.round.level);
+    for (const g of this.games) g.speedMultiplier = multiplier;
   }
 
   get active(): MiniGame {
@@ -150,6 +158,7 @@ export class App {
   restart(): void {
     this.games = GAME_ORDER.map((cls) => new cls(this.width, this.height));
     this.round = new RoundManager(this.games.length, LEVEL_START, LEVEL_STEP, LEVEL_FLOOR, this.startLevel);
+    this.applySpeed();
     this.gameOver = false;
   }
 
@@ -175,6 +184,8 @@ export class App {
     if (this.gameOver) return -1;
 
     const tick = this.round.tick(dt);
+    // The level (and so the speed multiplier) may have just changed.
+    if (tick === 0) this.applySpeed();
     if (tick === TICKS_PER_CYCLE - 1) {
       // Swap in the incoming mini-game during the pause; play resumes on tick 0.
       this.doSwitch();

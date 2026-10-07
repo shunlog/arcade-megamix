@@ -73,22 +73,24 @@ export class PongGame extends MiniGame {
   override update(dt: number): boolean {
     if (!this.alive) return false;
 
+    const speed = this.speedMultiplier;
+
     if (this.pressed.has(Keys.UP) || this.pressed.has(Keys.W)) {
-      this.playerY -= PongGame.PADDLE_SPEED * dt;
+      this.playerY -= PongGame.PADDLE_SPEED * speed * dt;
     }
     if (this.pressed.has(Keys.DOWN) || this.pressed.has(Keys.S)) {
-      this.playerY += PongGame.PADDLE_SPEED * dt;
+      this.playerY += PongGame.PADDLE_SPEED * speed * dt;
     }
     this.playerY = clamp(this.playerY, 0, this.height - PongGame.PADDLE_H);
 
     // Simple tracking AI with a capped speed.
     const target = this.ballY - PongGame.PADDLE_H / 2;
     const diff = target - this.aiY;
-    const step = clamp(diff, -PongGame.AI_SPEED * dt, PongGame.AI_SPEED * dt);
+    const step = clamp(diff, -PongGame.AI_SPEED * speed * dt, PongGame.AI_SPEED * speed * dt);
     this.aiY = clamp(this.aiY + step, 0, this.height - PongGame.PADDLE_H);
 
-    this.ballX += this.ballVx * dt;
-    this.ballY += this.ballVy * dt;
+    this.ballX += this.ballVx * speed * dt;
+    this.ballY += this.ballVy * speed * dt;
 
     if (this.ballY <= 0 || this.ballY + PongGame.BALL_SIZE >= this.height) {
       this.ballVy *= -1;

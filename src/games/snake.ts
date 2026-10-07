@@ -130,7 +130,9 @@ export class SnakeGame extends MiniGame {
 
   override update(dt: number): boolean {
     if (!this.alive) return false;
-    this.moveTimer += dt;
+    // Time flows faster with the global multiplier, so the snake takes grid
+    // steps at a proportionally higher rate.
+    this.moveTimer += dt * this.speedMultiplier;
     while (this.alive && this.moveTimer >= SnakeGame.STEP_TIME) {
       this.moveTimer -= SnakeGame.STEP_TIME;
       this.step();

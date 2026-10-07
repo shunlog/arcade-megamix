@@ -13,6 +13,12 @@ export abstract class MiniGame {
   score = 0;
   alive = true;
   readonly pressed = new Set<KeyCode>();
+  /**
+   * Global speed multiplier, driven by the current level (1.0 at level 0,
+   * +0.1 per level). Every mini-game scales its speeds by this value so the
+   * whole arcade gets faster together. Standalone runs leave it at 1.0.
+   */
+  speedMultiplier = 1.0;
 
   constructor(width: number, height: number) {
     this.width = width;

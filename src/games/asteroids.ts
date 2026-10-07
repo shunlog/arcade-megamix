@@ -111,11 +111,13 @@ export class AsteroidsGame extends MiniGame {
   override update(dt: number): boolean {
     if (!this.alive) return false;
 
+    const speed = this.speedMultiplier;
+
     if (this.pressed.has(Keys.LEFT) || this.pressed.has(Keys.A)) {
-      this.angle -= AsteroidsGame.ROT_SPEED * dt;
+      this.angle -= AsteroidsGame.ROT_SPEED * speed * dt;
     }
     if (this.pressed.has(Keys.RIGHT) || this.pressed.has(Keys.D)) {
-      this.angle += AsteroidsGame.ROT_SPEED * dt;
+      this.angle += AsteroidsGame.ROT_SPEED * speed * dt;
     }
 
     if (this.pressed.has(Keys.UP) || this.pressed.has(Keys.W)) {
@@ -123,27 +125,31 @@ export class AsteroidsGame extends MiniGame {
       this.shipVy += Math.sin(this.angle) * AsteroidsGame.THRUST * dt;
     }
 
+    // Velocities stay in base units; the global multiplier is applied when
+    // they are integrated into position, so every moving thing scales at once
+    // and a level change takes effect immediately.
+
     // mild drag so the ship does not accelerate forever
     this.shipVx -= this.shipVx * AsteroidsGame.FRICTION * dt;
     this.shipVy -= this.shipVy * AsteroidsGame.FRICTION * dt;
-    this.shipX = mod(this.shipX + this.shipVx * dt, this.width);
-    this.shipY = mod(this.shipY + this.shipVy * dt, this.height);
+    this.shipX = mod(this.shipX + this.shipVx * speed * dt, this.width);
+    this.shipY = mod(this.shipY + this.shipVy * speed * dt, this.height);
 
-    this.fireTimer = Math.max(0, this.fireTimer - dt);
+    this.fireTimer = Math.max(0, this.fireTimer - dt * speed);
     if (this.pressed.has(Keys.SPACE) && this.fireTimer === 0) {
       this.fire();
     }
 
     for (const b of this.bullets) {
-      b.x = mod(b.x + b.vx * dt, this.width);
-      b.y = mod(b.y + b.vy * dt, this.height);
-      b.life -= dt;
+      b.x = mod(b.x + b.vx * speed * dt, this.width);
+      b.y = mod(b.y + b.vy * speed * dt, this.height);
+      b.life -= dt * speed;
     }
     this.bullets = this.bullets.filter((b) => b.life > 0);
 
     for (const a of this.asteroids) {
-      a.x = mod(a.x + a.vx * dt, this.width);
-      a.y = mod(a.y + a.vy * dt, this.height);
+      a.x = mod(a.x + a.vx * speed * dt, this.width);
+      a.y = mod(a.y + a.vy * speed * dt, this.height);
     }
 
     this.collideBullets();

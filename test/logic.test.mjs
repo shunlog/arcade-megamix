@@ -11,6 +11,8 @@ import { PacmanGame } from "../dist/games/pacman.js";
 import { SnakeGame, UP } from "../dist/games/snake.js";
 import { TronGame } from "../dist/games/tron.js";
 import { seededRng } from "../dist/rng.js";
+import { speedMultiplier } from "../dist/config.js";
+import { PongGame } from "../dist/games/pong.js";
 
 test("round duration shrinks per level and is capped", () => {
   const rm = new RoundManager(5);
@@ -187,4 +189,32 @@ test("pacman escapes a wall even when an impossible turn is buffered", () => {
   assert.deepEqual(pac.pacDir, [0, 1]);
   assert.equal(pac.pacY, 2);
   assert.equal(pac.pending.length, 0);
+});
+
+test("speed multiplier is 1.0 at level 0 and +0.1 per level", () => {
+  assert.equal(speedMultiplier(0), 1.0);
+  assert.ok(Math.abs(speedMultiplier(1) - 1.1) < 1e-9);
+  assert.ok(Math.abs(speedMultiplier(6) - 1.6) < 1e-9);
+});
+
+test("the app gives every mini-game the current level's multiplier", () => {
+  const app = new App(800, 600, 3);
+  assert.ok(Math.abs(app.round.level - 3) < 1e-9);
+  for (const g of app.games) {
+    assert.ok(Math.abs(g.speedMultiplier - 1.3) < 1e-9);
+  }
+});
+
+test("mini-game speeds scale with the multiplier", () => {
+  const distance = (multiplier) => {
+    const pong = new PongGame(800, 600, seededRng(1));
+    pong.speedMultiplier = multiplier;
+    const x0 = pong.ballX;
+    const y0 = pong.ballY;
+    pong.update(1 / 60);
+    return Math.hypot(pong.ballX - x0, pong.ballY - y0);
+  };
+  const base = distance(1);
+  assert.ok(Math.abs(distance(2) - base * 2) < 1e-6);
+  assert.ok(Math.abs(distance(3) - base * 3) < 1e-6);
 });

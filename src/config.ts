@@ -56,6 +56,17 @@ export const PLAY_TICKS = 6; // playing ticks per cycle
 export const PAUSE_TICKS = 2; // pause ticks per cycle
 export const TICKS_PER_CYCLE = PLAY_TICKS + PAUSE_TICKS;
 
+// --- Global speed multiplier ------------------------------------------------
+// Every mini-game runs at this multiple of its base speed. It is 1.0 at level
+// 0 and gains 0.1 for every level after that, so the whole arcade speeds up as
+// the run progresses. Games read it from `MiniGame.speedMultiplier`.
+export const SPEED_PER_LEVEL = 0.1;
+
+/** Speed multiplier for a given level: 1.0 at level 0, +0.1 per level. */
+export function speedMultiplier(level: number): number {
+  return 1.0 + Math.max(0, level) * SPEED_PER_LEVEL;
+}
+
 /** Format a colour tuple as a canvas fillStyle string. */
 export function rgb(color: Color): string {
   return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;

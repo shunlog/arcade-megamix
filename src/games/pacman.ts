@@ -175,14 +175,18 @@ export class PacmanGame extends MiniGame {
   override update(dt: number): boolean {
     if (!this.alive) return false;
 
-    this.pacTimer += dt;
+    // Time flows faster with the global multiplier, so Pac-Man and the ghosts
+    // move at a proportionally higher rate while keeping their relative speed.
+    const speed = this.speedMultiplier;
+
+    this.pacTimer += dt * speed;
     while (this.alive && this.pacTimer >= PacmanGame.PAC_STEP) {
       this.pacTimer -= PacmanGame.PAC_STEP;
       this.stepPac();
       this.checkCollision();
     }
 
-    this.ghostTimer += dt;
+    this.ghostTimer += dt * speed;
     while (this.alive && this.ghostTimer >= PacmanGame.GHOST_STEP) {
       this.ghostTimer -= PacmanGame.GHOST_STEP;
       this.stepGhosts();
