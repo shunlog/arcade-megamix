@@ -67,7 +67,10 @@ export class Menu {
 
   handleMouseMove(x: number, y: number): void {
     const hit = this.hitTest(x, y);
-    if (hit >= 0) this.selected = hit;
+    if (hit >= 0 && hit !== this.selected) {
+      this.selected = hit;
+      this.onMove?.();
+    }
   }
 
   /** True when (`x`, `y`) is inside one of the buttons. */
