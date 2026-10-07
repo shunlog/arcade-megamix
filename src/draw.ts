@@ -95,6 +95,29 @@ export function fillPolygon(
   ctx.fill();
 }
 
+/**
+ * Fill a disc with a wedge-shaped bite taken out of it. `angle` is the
+ * direction the missing wedge points and `mouth` its half-angle in radians.
+ * Used for Pac-Man so the mouth is a real cut-out rather than a black
+ * triangle painted on top of the maze.
+ */
+export function fillDiscMinusWedge(
+  ctx: CanvasRenderingContext2D,
+  color: Color,
+  x: number,
+  y: number,
+  radius: number,
+  angle: number,
+  mouth: number,
+): void {
+  ctx.fillStyle = rgb(color);
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.arc(x, y, Math.max(0, radius), angle + mouth, angle - mouth + Math.PI * 2);
+  ctx.closePath();
+  ctx.fill();
+}
+
 export function fillRect(
   ctx: CanvasRenderingContext2D,
   color: Color,

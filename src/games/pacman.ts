@@ -17,7 +17,7 @@ import {
   SCORE_PAC_PELLET,
   type Color,
 } from "../config.js";
-import { fillCircle, fillPolygon, fillRect } from "../draw.js";
+import { fillCircle, fillDiscMinusWedge, fillPolygon, fillRect } from "../draw.js";
 import { Keys, type KeyCode } from "../keys.js";
 import { defaultRng, type Rng } from "../rng.js";
 import { MiniGame } from "./base.js";
@@ -73,6 +73,9 @@ export class PacmanGame extends MiniGame {
   static readonly PAC_STEP = 0.18;
   static readonly GHOST_STEP = 0.3;
   static readonly MAX_QUEUE = 2;
+  // Half-angle of Pac-Man's mouth wedge (radians). Bigger than the old
+  // 0.5 to read clearly at small tile sizes.
+  static readonly MOUTH_HALF_ANGLE = 0.78;
 
   readonly rng: Rng;
   readonly rows: number;
@@ -141,6 +144,17 @@ export class PacmanGame extends MiniGame {
   }
 
   queueTurn(direction: Vec): boolean {
+    // A reversal is always legal (we came from the tile behind us), so apply
+    // it immediately and drop any buffered turn that could otherwise pin pac
+    // in place. Repeating the same reverse is simply ignored.
+    if (
+      direction[0] === -this.pacDir[0] &&
+      direction[1] === -this.pacDir[1]
+    ) {
+      this.pacDir = [direction[0], direction[1]];
+      this.pending = [];
+      return true;
+    }
     const last = this.pending.length > 0 ? this.pending[this.pending.length - 1] : this.pacDir;
     if (direction[0] === last[0] && direction[1] === last[1]) return false;
     if (this.pending.length >= PacmanGame.MAX_QUEUE) return false;
@@ -179,13 +193,23 @@ export class PacmanGame extends MiniGame {
   }
 
   private stepPac(): void {
-    // Try the buffered turn until it becomes legal.
-    if (this.pending.length > 0) {
+    const canAdvance = this.walkable(this.pacX + this.pacDir[0], this.pacY + this.pacDir[1]);
+
+    // Drain buffered turns. A turn that is illegal right now is kept while
+    // pac can still roll forward, so it can fire at the next junction. But a
+    // stale entry must never jam the queue: once pac is pinned against a wall
+    // (or a newer key press is waiting behind it) it is discarded. Without
+    // this, hitting a wall right after an impossible turn would freeze pac
+    // and swallow every later input.
+    while (this.pending.length > 0) {
       const candidate = this.pending[0];
       if (this.walkable(this.pacX + candidate[0], this.pacY + candidate[1])) {
         this.pacDir = candidate;
         this.pending.shift();
+        break;
       }
+      if (canAdvance && this.pending.length === 1) break;
+      this.pending.shift();
     }
 
     const nx = this.pacX + this.pacDir[0];
@@ -253,6 +277,10 @@ export class PacmanGame extends MiniGame {
   override draw(ctx: CanvasRenderingContext2D): void {
     ctx.fillStyle = `rgb(${BLACK[0]},${BLACK[1]},${BLACK[2]})`;
     ctx.fillRect(0, 0, this.width, this.height);
+    // Pac-Man's mouth wedge is a separate, lower layer: walls, pellets and
+    // ghosts paint over it, so an enlarged mouth can never smear black across
+    // neighbouring tiles. The body (drawn last) has a matching notch.
+    this.drawPacMouth(ctx);
     const c = this.cell;
     for (let y = 0; y < this.rows; y++) {
       for (let x = 0; x < this.cols; x++) {
@@ -280,24 +308,41 @@ export class PacmanGame extends MiniGame {
     this.drawPac(ctx);
   }
 
+  /** Direction Pac-Man's mouth points, in canvas radians. */
+  private pacAngle(): number {
+    const angles: Record<string, number> = {
+      "1,0": 0,
+      "-1,0": Math.PI,
+      "0,-1": -Math.PI / 2,
+      "0,1": Math.PI / 2,
+    };
+    return angles[`${this.pacDir[0]},${this.pacDir[1]}`] ?? 0;
+  }
+
+  private pacRadius(): number {
+    return Math.floor(this.cell / 2) - 3;
+  }
+
+  /** Black mouth wedge, painted before the maze so it sits below it. */
+  private drawPacMouth(ctx: CanvasRenderingContext2D): void {
+    const c = this.cell;
+    const cx = this.px(this.pacX) + Math.floor(c / 2);
+    const cy = this.py(this.pacY) + Math.floor(c / 2);
+    const r = this.pacRadius();
+    const a = this.pacAngle();
+    const m = PacmanGame.MOUTH_HALF_ANGLE;
+    const p1: [number, number] = [cx + Math.cos(a - m) * r, cy + Math.sin(a - m) * r];
+    const p2: [number, number] = [cx + Math.cos(a + m) * r, cy + Math.sin(a + m) * r];
+    fillPolygon(ctx, BLACK, [[cx, cy], p1, p2]);
+  }
+
   private drawPac(ctx: CanvasRenderingContext2D): void {
     const c = this.cell;
     const cx = this.px(this.pacX) + Math.floor(c / 2);
     const cy = this.py(this.pacY) + Math.floor(c / 2);
-    const r = Math.floor(c / 2) - 3;
-    fillCircle(ctx, PAC_YELLOW, cx, cy, r);
-    // Mouth wedge pointing in the travel direction. Keep it inside the
-    // circle so it never paints over neighbouring walls.
-    const angleDeg: Record<string, number> = {
-      "1,0": 0,
-      "-1,0": 180,
-      "0,-1": 90,
-      "0,1": 270,
-    };
-    const a = (angleDeg[`${this.pacDir[0]},${this.pacDir[1]}`] * Math.PI) / 180;
-    const p1: [number, number] = [cx + Math.cos(a + 0.5) * r, cy + Math.sin(a + 0.5) * r];
-    const p2: [number, number] = [cx + Math.cos(a - 0.5) * r, cy + Math.sin(a - 0.5) * r];
-    fillPolygon(ctx, BLACK, [[cx, cy], p1, p2]);
+    // Notched disc instead of a full circle plus black triangle, so the body
+    // does not paint over the lower mouth layer.
+    fillDiscMinusWedge(ctx, PAC_YELLOW, cx, cy, this.pacRadius(), this.pacAngle(), PacmanGame.MOUTH_HALF_ANGLE);
   }
 
   private drawGhost(ctx: CanvasRenderingContext2D, ghost: Ghost): void {

@@ -171,3 +171,20 @@ test("pacman eats a pellet for one point", () => {
   assert.equal(pac.score, start + 1);
   assert.equal(pac.pellets.has("2,1"), false);
 });
+
+test("pacman escapes a wall even when an impossible turn is buffered", () => {
+  const pac = new PacmanGame(800, 600, seededRng(5));
+  // Facing up into a wall at (1,0); left is also a wall, so the buffered
+  // left turn can never fire. A later down turn must not be stuck behind it.
+  pac.pacX = 1;
+  pac.pacY = 1;
+  pac.pacDir = [0, -1];
+  pac.pending = [
+    [-1, 0],
+    [0, 1],
+  ];
+  pac.stepPac();
+  assert.deepEqual(pac.pacDir, [0, 1]);
+  assert.equal(pac.pacY, 2);
+  assert.equal(pac.pending.length, 0);
+});
