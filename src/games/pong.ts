@@ -95,6 +95,7 @@ export class PongGame extends MiniGame {
     if (this.ballY <= 0 || this.ballY + PongGame.BALL_SIZE >= this.height) {
       this.ballVy *= -1;
       this.ballY = clamp(this.ballY, 0, this.height - PongGame.BALL_SIZE);
+      this.sfx("wall");
     }
 
     this.collidePaddles();
@@ -103,6 +104,7 @@ export class PongGame extends MiniGame {
       this.alive = false;
     } else if (this.ballX > this.width) {
       this.addScore(SCORE_PONG_GOAL);
+      this.sfx("goal");
       this.serve(-1);
     }
     return this.alive;
@@ -122,9 +124,11 @@ export class PongGame extends MiniGame {
       this.ballX = player.x + player.w;
       this.bounce((this.ballY - this.playerY) / PongGame.PADDLE_H - 0.5);
       this.addScore(SCORE_PONG_HIT);
+      this.sfx("paddle");
     } else if (this.ballVx > 0 && collides(ball, ai)) {
       this.ballX = ai.x - PongGame.BALL_SIZE;
       this.bounce((this.ballY - this.aiY) / PongGame.PADDLE_H - 0.5);
+      this.sfx("paddleCpu");
     }
   }
 

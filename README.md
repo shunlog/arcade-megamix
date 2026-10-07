@@ -45,6 +45,15 @@ files. The last two buzzes of each cycle (the pause and the incoming game) use
 a higher pitch. Browsers only allow audio after a user gesture, so the audio
 context is unlocked on the first key press or click.
 
+The tick buzzes are intentionally the loudest sounds in the mix, so mini-game
+effects never drown out the beat. Mini-games queue effects (`this.sfx(...)`) as
+they happen and the shell plays them after each update, keeping the game logic
+free of audio. Effects cover ball/paddle and wall hits plus goals in Pong,
+pellet eating in Pac-Man, turning and apple eating in Snake, turning and kills
+in Tron, and shooting/explosions in Asteroids. The shell also adds menu move /
+select blips, pause and resume tones, a quit blip and a short descending
+game-over melody.
+
 ## Requirements
 
 - Node.js 18+ (no runtime dependencies; TypeScript is the only dev dependency)

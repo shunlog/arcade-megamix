@@ -184,6 +184,7 @@ export class AsteroidsGame extends MiniGame {
     });
     this.fireTimer = AsteroidsGame.FIRE_COOLDOWN;
     this.fireQueued = false;
+    this.sfx("shoot");
   }
 
   private collideBullets(): void {
@@ -192,6 +193,7 @@ export class AsteroidsGame extends MiniGame {
         if (Math.hypot(b.x - a.x, b.y - a.y) <= a.radius) {
           this.bullets.splice(this.bullets.indexOf(b), 1);
           this.asteroids.splice(this.asteroids.indexOf(a), 1);
+          this.sfx("explode");
           if (isBig(a)) {
             this.addScore(SCORE_ASTEROID_BIG);
             this.split(a);

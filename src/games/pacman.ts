@@ -225,6 +225,7 @@ export class PacmanGame extends MiniGame {
     if (this.pellets.has(key)) {
       this.pellets.delete(key);
       this.addScore(SCORE_PAC_PELLET);
+      this.sfx("pellet");
       if (this.pellets.size === 0) this.refillPellets();
     }
   }

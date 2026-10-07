@@ -23,6 +23,9 @@ interface Rect {
 export class Menu {
   selected = 0;
   private rects: Rect[] = [];
+  /** Optional shell hooks so the host can play selection / confirm sounds. */
+  onMove: (() => void) | null = null;
+  onActivate: (() => void) | null = null;
 
   constructor(
     readonly title: string,
@@ -37,9 +40,11 @@ export class Menu {
     const n = this.items.length;
     if (n === 0) return;
     this.selected = (this.selected + delta + n) % n;
+    this.onMove?.();
   }
 
   activate(): void {
+    this.onActivate?.();
     this.items[this.selected]?.onSelect();
   }
 

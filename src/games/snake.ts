@@ -98,6 +98,7 @@ export class SnakeGame extends MiniGame {
         candidate[0] === -this.direction[0] && candidate[1] === -this.direction[1];
       if (!isSame && !isReverse) {
         this.direction = candidate;
+        this.sfx("snakeTurn");
         break;
       }
     }
@@ -122,6 +123,7 @@ export class SnakeGame extends MiniGame {
     this.snake.unshift([nx, ny]);
     if (eating) {
       this.addScore(SCORE_SNAKE_APPLE);
+      this.sfx("apple");
       this.apple = this.randomFreeCell();
     } else {
       this.snake.pop();

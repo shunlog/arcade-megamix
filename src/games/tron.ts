@@ -162,6 +162,7 @@ export class TronGame extends MiniGame {
 
     if (enemyCrashed) {
       this.addScore(SCORE_TRON_KILL);
+      this.sfx("tronKill");
       this.resetArena();
     }
   }
@@ -184,7 +185,10 @@ export class TronGame extends MiniGame {
         candidate[0] === rider.direction[0] && candidate[1] === rider.direction[1];
       const isReverse =
         candidate[0] === -rider.direction[0] && candidate[1] === -rider.direction[1];
-      if (!isSame && !isReverse) return candidate;
+      if (!isSame && !isReverse) {
+        this.sfx("tronTurn");
+        return candidate;
+      }
     }
     return rider.direction;
   }
@@ -222,7 +226,11 @@ export class TronGame extends MiniGame {
     ranked.sort(
       (a, b) => a.danger - b.danger || a.distance - b.distance || a.tie - b.tie,
     );
-    return ranked[0].d;
+    const choice = ranked[0].d;
+    if (choice[0] !== rider.direction[0] || choice[1] !== rider.direction[1]) {
+      this.sfx("tronTurnEnemy");
+    }
+    return choice;
   }
 
   // -- rendering -----------------------------------------------------------

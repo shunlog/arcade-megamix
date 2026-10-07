@@ -7,7 +7,7 @@
 import { GRAY, PixelFont, SCREEN_H, SCREEN_W } from "./config.js";
 import { App } from "./app.js";
 import { drawOverlay } from "./draw.js";
-import { GAME_ENTRIES } from "./games/index.js";
+import { GAME_ENTRIES, type MiniGame } from "./games/index.js";
 import { Menu } from "./menu.js";
 import { StandaloneRunner } from "./runner.js";
 import { Buzzer } from "./sound.js";
@@ -44,18 +44,31 @@ function start(): void {
 
   const buzzer = new Buzzer();
 
+  /** Play (and clear) the effects a mini-game queued during its update. */
+  const playSound = (game: MiniGame): void => {
+    if (game.sounds.length === 0) return;
+    for (const name of game.sounds) buzzer.sfx(name);
+    game.sounds.length = 0;
+  };
+
+  /** Set once the current run's death melody has been played. */
+  let deathAnnounced = false;
+
   const showMenu = (): void => {
     screen = "menu";
     app = null;
     runner = null;
     paused = false;
+    deathAnnounced = false;
   };
 
   const startMegamix = (startLevel: number): void => {
     app = new App(SCREEN_W, SCREEN_H, startLevel);
     runner = null;
     paused = false;
+    deathAnnounced = false;
     screen = "megamix";
+    buzzer.sfx("start");
     buzzer.tick(0); // play begins on tick 0
   };
 
@@ -63,7 +76,9 @@ function start(): void {
     runner = new StandaloneRunner(ctor, SCREEN_W, SCREEN_H);
     app = null;
     paused = false;
+    deathAnnounced = false;
     screen = "standalone";
+    buzzer.sfx("start");
   };
 
   const mainMenu = new Menu(
@@ -112,6 +127,12 @@ function start(): void {
           ? difficultyMenu
           : null;
 
+  // Let every menu click and move while the shell plays a matching blip.
+  for (const menu of [mainMenu, difficultyMenu, miniMenu]) {
+    menu.onMove = () => buzzer.sfx("menuMove");
+    menu.onActivate = () => buzzer.sfx("menuSelect");
+  }
+
   const keyDown = (event: KeyboardEvent): void => {
     const code = event.code as KeyCode;
     if (isTypingKey(code)) event.preventDefault();
@@ -120,6 +141,7 @@ function start(): void {
     const menu = activeMenu();
     if (menu !== null) {
       if ((screen === "minigames" || screen === "difficulty") && code === Keys.ESC) {
+        buzzer.sfx("quit");
         showMenu();
         return;
       }
@@ -130,14 +152,21 @@ function start(): void {
     const dead = screen === "megamix" ? app!.gameOver : !runner!.game.alive;
 
     if (code === Keys.ESC) {
-      if (!dead) paused = !paused;
+      if (!dead) {
+        paused = !paused;
+        buzzer.sfx(paused ? "pause" : "resume");
+      }
       return;
     }
     if (code === Keys.P) {
-      if (!dead) paused = !paused;
+      if (!dead) {
+        paused = !paused;
+        buzzer.sfx(paused ? "pause" : "resume");
+      }
       return;
     }
     if (paused && code === Keys.Q) {
+      buzzer.sfx("quit");
       showMenu();
       return;
     }
@@ -145,10 +174,12 @@ function start(): void {
 
     if (dead) {
       if (code === Keys.Q) {
+        buzzer.sfx("quit");
         showMenu();
         return;
       }
       if (code === Keys.R) {
+        deathAnnounced = false;
         if (screen === "megamix") {
           app!.restart();
           buzzer.tick(0);
@@ -217,11 +248,23 @@ function start(): void {
       if (!paused) {
         const tick = app!.update(dt);
         if (tick >= 0) buzzer.tick(tick);
+        for (const g of app!.games) playSound(g);
+      }
+      if (app!.gameOver && !deathAnnounced) {
+        deathAnnounced = true;
+        buzzer.sfx("death");
       }
       app!.draw(ctx);
       if (paused) drawPause();
     } else {
-      if (!paused) runner!.update(dt);
+      if (!paused) {
+        runner!.update(dt);
+        playSound(runner!.game);
+      }
+      if (!runner!.game.alive && !deathAnnounced) {
+        deathAnnounced = true;
+        buzzer.sfx("death");
+      }
       runner!.draw(ctx);
       if (paused) drawPause();
     }

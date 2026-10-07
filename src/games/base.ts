@@ -5,6 +5,7 @@
 // switches, so the player resumes exactly where they left off.
 
 import type { KeyCode } from "../keys.js";
+import type { Sfx } from "../sound.js";
 
 export abstract class MiniGame {
   name = "game";
@@ -13,6 +14,12 @@ export abstract class MiniGame {
   score = 0;
   alive = true;
   readonly pressed = new Set<KeyCode>();
+  /**
+   * Effects queued during this frame. The game logic never touches the audio
+   * engine directly; the host drains this list after each update and plays
+   * the sounds, so the mini-games stay pure and testable.
+   */
+  readonly sounds: Sfx[] = [];
   /**
    * Global speed multiplier, driven by the current level (1.0 at level 0,
    * +0.1 per level). Every mini-game scales its speeds by this value so the
@@ -51,6 +58,11 @@ export abstract class MiniGame {
   abstract draw(ctx: CanvasRenderingContext2D): void;
 
   // -- helpers -------------------------------------------------------------
+  /** Queue a sound effect for the host to play after this update. */
+  protected sfx(name: Sfx): void {
+    this.sounds.push(name);
+  }
+
   addScore(amount: number): void {
     this.score += Math.ceil(amount * this.scoreMultiplier);
   }
