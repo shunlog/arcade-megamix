@@ -1,6 +1,7 @@
 // Main application: cycle through the mini-games, switching ever faster.
 
 import {
+  DARK,
   GRAY,
   LEVEL_FLOOR,
   LEVEL_START,
@@ -235,12 +236,49 @@ export class App {
       this.drawPhaseSign(ctx, this.round.phase);
     }
 
+    // The tick ring hugs the screen edge so it stays visible through the
+    // pause / play overlays.
+    this.drawTickRing(ctx);
+
     if (this.gameOver) {
       drawOverlay(ctx, this.width, this.height, this.big, this.small, "GAME OVER", [
         { text: `FINAL SCORE ${this.totalScore}`, color: GRAY },
         { text: "R = RESTART    Q = MENU", color: GRAY },
       ]);
     }
+  }
+
+  /**
+   * Draw the eight-segment border around the whole screen that tracks the
+   * rotation's ticks: two segments per side. It fills clockwise from the
+   * top-left, so tick 0 lights one segment and tick 7 completes the screen.
+   */
+  private drawTickRing(ctx: CanvasRenderingContext2D): void {
+    const t = 4; // border thickness
+    const w = this.width;
+    const h = this.height;
+    const innerH = h - t * 2;
+    const halfH = Math.floor(innerH / 2);
+    const halfW = Math.floor(w / 2);
+
+    // Clockwise from the top-left: top (left, right), right side (top,
+    // bottom), bottom (right, left), then the left side (bottom, top).
+    const segments: ReadonlyArray<readonly [number, number, number, number]> = [
+      [0, 0, halfW, t],
+      [halfW, 0, w - halfW, t],
+      [w - t, t, t, halfH],
+      [w - t, t + halfH, t, innerH - halfH],
+      [halfW, h - t, w - halfW, t],
+      [0, h - t, halfW, t],
+      [0, t + halfH, t, innerH - halfH],
+      [0, t, t, halfH],
+    ];
+
+    const lit = this.round.tickIndex + 1;
+    segments.forEach(([sx, sy, sw, sh], i) => {
+      ctx.fillStyle = rgb(i < lit ? WHITE : DARK);
+      ctx.fillRect(sx, sy, sw, sh);
+    });
   }
 
   /**
