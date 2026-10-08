@@ -11,26 +11,19 @@ The mini-games rotate in this order:
 - Each mini-game keeps its state, so you resume exactly where you left off.
 - The run ends the moment you die in *any* mini-game.
 
-### The buzz cycle
+### Eight ticks
 
-A short **buzz** marks the beat of the rotation. The gap between two buzzes
-is a *tick*, and a cycle is eight ticks:
+Each mini-game runs for eight ticks:
 
 - **Ticks 1-7** — you are playing. A tick lasts `level duration / 8`.
 - **Tick 8** — the next mini-game is swapped in, frozen, with a big pause
   sign over the middle.
 - **Next tick** — play starts again and the cycle repeats.
 
-The eight ticks cover the whole level duration: seven play ticks plus a single
-switch-pause tick, so the pause is `level duration / 8` and playing is
-`level duration × 7/8`.
-
 Every mini-game has the same duration within a level. When you complete a
 cycle by passing through every mini-game, the level goes up and the duration
 drops by **1 second** (from 10s down to a 3s floor); a shorter duration means
-shorter ticks. These are configured in `config.ts` as `LEVEL_START`,
-`LEVEL_STEP` and `LEVEL_FLOOR` (and the tick counts as `PLAY_TICKS` /
-`PAUSE_TICKS`).
+shorter ticks. These are configured in `config.ts`.
 
 The difficulty chosen at start-up decides which level the run begins on, so it
 jumps straight into the faster ticks.
@@ -115,84 +108,3 @@ The game opens on a start-up screen with two options:
 Navigate with the arrow keys / WASD and confirm with Enter or Space, or just
 click the buttons. **Esc** backs out of the difficulty and mini-game menus.
 There is no URL-based game selection; everything happens in the in-game menus.
-
-## Controls
-
-| Mini-game | Controls |
-| --- | --- |
-| Snake | Arrows / WASD. Turns are buffered — queue up to 3 at once. |
-| Asteroids | ← → rotate, ↑ thrust, Space fire. |
-| Pong | ↑ ↓ (or W/S) move the left paddle. |
-| Tron | Arrows / WASD to steer. |
-| Pac-Man | Arrows / WASD to move. |
-
-**P** or **Esc** pauses while a game is running; while paused, **Q** quits
-back to the start-up menu. After a game over, **R** restarts and **Q** returns
-to the start-up menu.
-
-## Scoring
-
-Scores are normalised so that a Pac-Man pellet is the baseline of **1 point**:
-
-| Event | Points |
-| --- | --- |
-| Pac-Man pellet | 1 |
-| Snake apple | 5 |
-| Pong paddle hit | 1 |
-| Pong goal (past the CPU) | 10 |
-| Asteroid destroyed (big) | 10 |
-| Asteroid destroyed (small) | 5 |
-| Tron: enemy rider crashes | 25 |
-
-## Tests
-
-```bash
-pnpm test
-```
-
-This builds the project and runs the logic tests with Node's built-in test
-runner (`node --test`). The tests cover round timing/switching, snake buffering
-and growth, asteroid waves on a new loop, Tron arena resets and Pac-Man pellet
-scoring.
-
-## Project layout
-
-```
-index.html          # game page
-embed.html          # iframe embed demo
-serve.mjs           # zero-dependency static dev server
-src/
-  main.ts           # browser entry: canvas, input, animation loop
-  menu.ts           # canvas startup / mini-game menus
-  app.ts            # RoundManager + App (tick cycle and game switching)
-  runner.ts         # standalone mini-game runner
-  session.ts        # shared GameSession surface + HUD/game-over helpers
-  sound.ts          # Web Audio buzz primitive (oscillator + gain)
-  config.ts         # screen, palette, scoring, level timing, pixel font
-  keys.ts           # KeyboardEvent.code constants
-  rng.ts            # random helpers (+ deterministic seeded RNG for tests)
-  draw.ts           # small canvas drawing helpers
-  games/
-    base.ts         # MiniGame interface
-    snake.ts
-    asteroids.ts
-    pong.ts
-    tron.ts
-    pacman.ts
-    index.ts        # GAME_ORDER
-test/
-  logic.test.mjs
-```
-
-## Implementation notes
-
-- **Input** uses `KeyboardEvent.code` (`ArrowUp`, `KeyW`, `Space`, …) so the
-  key mapping is layout independent.
-- **Rendering** draws directly to a `CanvasRenderingContext2D`. Rounded corners
-  use `roundRect` with an `arcTo` fallback.
-- **Modulo semantics**: JavaScript's `%` keeps the sign of the dividend, so
-  the wrapping used by Asteroids goes through `mod()` in `draw.ts`.
-- **The pixel font** is a hand-authored 5x7 bitmap glyph set painted as
-  integer-aligned squares, so text stays razor sharp with no anti-aliasing.
-- **Esc** pauses while a game is running. On the game-over screen it returns
-  to the start-up menu instead, and **P** still toggles pause.
