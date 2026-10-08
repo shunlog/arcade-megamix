@@ -162,12 +162,12 @@ export class App {
       this.restart();
       return true;
     }
-    if (!this.gameOver) this.active.onKeyDown(key);
+    if (!this.gameOver && this.round.phase === "play") this.active.onKeyDown(key);
     return true;
   }
 
   handleKeyUp(key: KeyCode): void {
-    if (!this.gameOver) this.active.onKeyUp(key);
+    if (!this.gameOver && this.round.phase === "play") this.active.onKeyUp(key);
   }
 
   draw(ctx: CanvasRenderingContext2D): void {
