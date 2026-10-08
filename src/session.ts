@@ -1,4 +1,4 @@
-import { GRAY, PixelFont, WHITE } from "./config.js";
+import { LIGHT_GRAY, PixelFont, WHITE } from "./config.js";
 import { drawOverlay } from "./draw.js";
 import type { KeyCode } from "./keys.js";
 import type { Sfx } from "./sound.js";
@@ -31,7 +31,7 @@ export function drawScore(
   ctx.drawImage(surface, width - surface.width - HUD_MARGIN, HUD_TOP);
 
   if (caption === undefined) return;
-  const extra = small.render(caption, GRAY);
+  const extra = small.render(caption, LIGHT_GRAY);
   ctx.drawImage(extra, width - extra.width - HUD_MARGIN, HUD_TOP + surface.height + 6);
 }
 
@@ -44,7 +44,7 @@ export function drawGameOver(
   score: number,
 ): void {
   drawOverlay(ctx, width, height, big, small, "GAME OVER", [
-    { text: `FINAL SCORE ${score}`, color: GRAY },
-    { text: "R = RESTART    Q = MENU", color: GRAY },
+    { text: `FINAL SCORE ${score}`, color: LIGHT_GRAY },
+    { text: "R = RESTART    Q = MENU", color: LIGHT_GRAY },
   ]);
 }

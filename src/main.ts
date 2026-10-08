@@ -1,4 +1,4 @@
-import { GRAY, PixelFont, SCREEN_H, SCREEN_W } from "./config.js";
+import { LIGHT_GRAY, PixelFont, SCREEN_H, SCREEN_W } from "./config.js";
 import { App } from "./app.js";
 import { drawOverlay } from "./draw.js";
 import { GAME_ENTRIES } from "./games/index.js";
@@ -95,7 +95,7 @@ function start(): void {
 
   const drawPause = (): void => {
     drawOverlay(ctx, SCREEN_W, SCREEN_H, big, small, "PAUSED", [
-      { text: "P / ESC = RESUME    Q = MENU", color: GRAY },
+      { text: "P / ESC = RESUME    Q = MENU", color: LIGHT_GRAY },
     ]);
   };
 

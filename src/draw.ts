@@ -15,7 +15,7 @@ export function drawOverlay(
   title: string,
   lines: readonly OverlayLine[],
 ): void {
-  ctx.fillStyle = "rgba(8, 8, 16, 0.6)";
+  ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
   ctx.fillRect(0, 0, width, height);
 
   const titleSurface = big.render(title, WHITE);

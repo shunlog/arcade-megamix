@@ -7,6 +7,7 @@ export type Color = readonly [number, number, number];
 export const BLACK: Color = [8, 8, 16];
 export const WHITE: Color = [240, 240, 240];
 export const GRAY: Color = [90, 90, 110];
+export const LIGHT_GRAY: Color = [200, 200, 215];
 export const DARK: Color = [24, 24, 38];
 
 export const SNAKE_GREEN: Color = [86, 191, 74];
