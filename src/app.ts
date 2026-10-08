@@ -21,7 +21,7 @@ import { SnakeGame } from "./games/snake.js";
 import { drawOverlay } from "./draw.js";
 import { Keys, type KeyCode } from "./keys.js";
 
-export type RoundPhase = "play" | "pause" | "switch";
+export type RoundPhase = "play" | "pause";
 
 export class RoundManager {
   index = 0;
@@ -54,15 +54,12 @@ export class RoundManager {
   }
 
   get phase(): RoundPhase {
-    if (this.tickIndex < PLAY_TICKS) return "play";
-    return this.tickIndex === PLAY_TICKS ? "pause" : "switch";
+    return this.tickIndex < PLAY_TICKS ? "play" : "pause";
   }
 
   get timeToSwitch(): number {
-    if (this.tickIndex <= PLAY_TICKS) {
-      return this.remaining + (PLAY_TICKS - this.tickIndex) * this.tickDuration;
-    }
-    return this.remaining + (TICKS_PER_CYCLE - 1) * this.tickDuration;
+    const ticks = (PLAY_TICKS - 1 - this.tickIndex + TICKS_PER_CYCLE) % TICKS_PER_CYCLE;
+    return this.remaining + ticks * this.tickDuration;
   }
 
   tick(dt: number): number {
@@ -186,7 +183,7 @@ export class App {
     ctx.drawImage(mult, this.width - mult.width - 16, 12 + score.height + 6);
 
     if (!this.gameOver && this.round.phase !== "play") {
-      this.drawPhaseSign(ctx, this.round.phase);
+      this.drawPhaseSign(ctx);
     }
 
     this.drawTickRing(ctx);
@@ -225,7 +222,7 @@ export class App {
     });
   }
 
-  private drawPhaseSign(ctx: CanvasRenderingContext2D, phase: "pause" | "switch"): void {
+  private drawPhaseSign(ctx: CanvasRenderingContext2D): void {
     const cx = this.width / 2;
     const cy = this.height / 2;
     const size = 140;
@@ -235,19 +232,10 @@ export class App {
     ctx.fillRect(0, 0, this.width, this.height);
     ctx.fillStyle = rgb(WHITE);
 
-    if (phase === "pause") {
-      const bar = size * 0.3;
-      const half = size * 0.12;
-      ctx.fillRect(cx - half - bar, cy - size / 2, bar, size);
-      ctx.fillRect(cx + half, cy - size / 2, bar, size);
-    } else {
-      ctx.beginPath();
-      ctx.moveTo(cx - size * 0.32, cy - size / 2);
-      ctx.lineTo(cx + size * 0.5, cy);
-      ctx.lineTo(cx - size * 0.32, cy + size / 2);
-      ctx.closePath();
-      ctx.fill();
-    }
+    const bar = size * 0.3;
+    const half = size * 0.12;
+    ctx.fillRect(cx - half - bar, cy - size / 2, bar, size);
+    ctx.fillRect(cx + half, cy - size / 2, bar, size);
     ctx.restore();
   }
 }

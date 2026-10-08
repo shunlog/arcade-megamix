@@ -62,26 +62,24 @@ test("the tick duration stays constant across a wrapping cycle", () => {
   assert.ok(rm.tickDuration < tick);
 });
 
-test("the cycle is six play ticks then a two-tick pause", () => {
+test("the cycle is seven play ticks then a single switch-pause tick", () => {
   const rm = new RoundManager(5);
   const dt = rm.tickDuration + 1e-6;
 
-  for (let i = 1; i <= 5; i++) {
+  for (let i = 1; i <= 6; i++) {
     assert.equal(rm.tick(dt), i);
     assert.equal(rm.phase, "play");
   }
-  assert.equal(rm.tick(dt), 6);
-  assert.equal(rm.phase, "pause");
   assert.equal(rm.tick(dt), 7);
-  assert.equal(rm.phase, "switch");
+  assert.equal(rm.phase, "pause");
   assert.equal(rm.tick(dt), 0);
   assert.equal(rm.phase, "play");
 });
 
-test("the pause lasts two ticks, a quarter of the level duration", () => {
+test("the switch-pause lasts one tick, an eighth of the level duration", () => {
   const rm = new RoundManager(5);
-  assert.ok(Math.abs(2 * rm.tickDuration - rm.duration / 4) < 1e-9);
-  assert.ok(Math.abs(rm.playDuration - (3 * rm.duration) / 4) < 1e-9);
+  assert.ok(Math.abs(rm.tickDuration - rm.duration / 8) < 1e-9);
+  assert.ok(Math.abs(rm.playDuration - (7 * rm.duration) / 8) < 1e-9);
 });
 
 test("advance wraps the game index at the end of a cycle", () => {

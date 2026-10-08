@@ -42,8 +42,8 @@ export const LEVEL_START = 10.0;
 export const LEVEL_STEP = 1.0;
 export const LEVEL_FLOOR = 3.0;
 
-export const PLAY_TICKS = 6;
-export const PAUSE_TICKS = 2;
+export const PLAY_TICKS = 7;
+export const PAUSE_TICKS = 1;
 export const TICKS_PER_CYCLE = PLAY_TICKS + PAUSE_TICKS;
 
 export const SPEED_PER_LEVEL = 0.1;

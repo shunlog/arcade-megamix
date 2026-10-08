@@ -16,14 +16,14 @@ The mini-games rotate in this order:
 A short **buzz** marks the beat of the rotation. The gap between two buzzes
 is a *tick*, and a cycle is eight ticks:
 
-- **Ticks 1-6** — you are playing. A tick lasts `level duration / 8`.
-- **Tick 7** — a big pause sign appears and the mini-game freezes.
-- **Tick 8** — the next mini-game is swapped in, still frozen, and the sign
-  becomes a play triangle.
+- **Ticks 1-7** — you are playing. A tick lasts `level duration / 8`.
+- **Tick 8** — the next mini-game is swapped in, frozen, with a big pause
+  sign over the middle.
 - **Next tick** — play starts again and the cycle repeats.
 
-The eight ticks cover the whole level duration: six play ticks plus a two-tick
-pause, so the pause is `level duration / 4` and playing is `level duration × 3/4`.
+The eight ticks cover the whole level duration: seven play ticks plus a single
+switch-pause tick, so the pause is `level duration / 8` and playing is
+`level duration × 7/8`.
 
 Every mini-game has the same duration within a level. When you complete a
 cycle by passing through every mini-game, the level goes up and the duration
@@ -41,8 +41,8 @@ it). Your total score is shown top-right in a big blocky pixel font.
 ### Sound
 
 The buzzes are generated with the Web Audio API in `src/sound.ts` — no audio
-files. The last two buzzes of each cycle (the pause and the incoming game) use
-a higher pitch. Browsers only allow audio after a user gesture, so the audio
+files. The final buzz of each cycle (the switch-pause tick) uses a higher
+pitch. Browsers only allow audio after a user gesture, so the audio
 context is unlocked on the first key press or click.
 
 The tick buzzes are intentionally the loudest sounds in the mix, so mini-game
