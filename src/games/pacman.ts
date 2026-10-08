@@ -65,6 +65,11 @@ export class PacmanGame extends MiniGame {
   static readonly GHOST_STEP = 0.3;
   static readonly MAX_QUEUE = 2;
   static readonly MOUTH_HALF_ANGLE = 0.78;
+  static readonly WALL_COLOR: Color = [28, 40, 160];
+  static readonly DOOR_COLOR: Color = [240, 170, 200];
+  static readonly PELLET_DIVISOR = 9;
+  static readonly PELLET_MIN_RADIUS = 2;
+  static readonly GHOST_INSET = 3;
 
   readonly rng: Rng;
   readonly rows: number;
@@ -102,12 +107,7 @@ export class PacmanGame extends MiniGame {
     this.ghosts = GHOST_SPAWNS.map(
       ([x, y], i) => new Ghost(x, y, this.rng.choice([UP, DOWN, LEFT, RIGHT]), GHOST_COLORS[i]),
     );
-    this.pellets = new Set<string>();
-    for (let y = 0; y < this.rows; y++) {
-      for (let x = 0; x < this.cols; x++) {
-        if (MAZE[y][x] === ".") this.pellets.add(`${x},${y}`);
-      }
-    }
+    this.refillPellets();
     this.score = 0;
     this.alive = true;
   }
@@ -257,17 +257,16 @@ export class PacmanGame extends MiniGame {
   }
 
   override draw(ctx: CanvasRenderingContext2D): void {
-    ctx.fillStyle = `rgb(${BLACK[0]},${BLACK[1]},${BLACK[2]})`;
-    ctx.fillRect(0, 0, this.width, this.height);
+    this.clear(ctx);
     this.drawPacMouth(ctx);
     const c = this.cell;
     for (let y = 0; y < this.rows; y++) {
       for (let x = 0; x < this.cols; x++) {
         const ch = MAZE[y][x];
         if (ch === "#") {
-          fillRect(ctx, [28, 40, 160], this.px(x), this.py(y), c, c, 6);
+          fillRect(ctx, PacmanGame.WALL_COLOR, this.px(x), this.py(y), c, c, 6);
         } else if (ch === "-") {
-          fillRect(ctx, [240, 170, 200], this.px(x), this.py(y) + Math.floor(c / 2), c, 4);
+          fillRect(ctx, PacmanGame.DOOR_COLOR, this.px(x), this.py(y) + Math.floor(c / 2), c, 4);
         }
       }
     }
@@ -279,7 +278,7 @@ export class PacmanGame extends MiniGame {
         PELLET,
         this.px(x) + Math.floor(c / 2),
         this.py(y) + Math.floor(c / 2),
-        Math.max(2, Math.floor(c / 9)),
+        Math.max(PacmanGame.PELLET_MIN_RADIUS, Math.floor(c / PacmanGame.PELLET_DIVISOR)),
       );
     }
 
@@ -324,9 +323,10 @@ export class PacmanGame extends MiniGame {
     const c = this.cell;
     const x = this.px(ghost.x);
     const y = this.py(ghost.y);
-    const r = Math.floor(c / 2) - 3;
+    const inset = PacmanGame.GHOST_INSET;
+    const r = Math.floor(c / 2) - inset;
     fillCircle(ctx, ghost.color, x + Math.floor(c / 2), y + Math.floor(c / 2) - 2, r);
-    fillRect(ctx, ghost.color, x + 3, y + Math.floor(c / 2) - 2, c - 6, Math.floor(c / 2));
+    fillRect(ctx, ghost.color, x + inset, y + Math.floor(c / 2) - 2, c - inset * 2, Math.floor(c / 2));
     fillCircle(
       ctx,
       DARK,

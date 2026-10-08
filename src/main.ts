@@ -1,17 +1,24 @@
 import { GRAY, PixelFont, SCREEN_H, SCREEN_W } from "./config.js";
 import { App } from "./app.js";
 import { drawOverlay } from "./draw.js";
-import { GAME_ENTRIES, type MiniGame } from "./games/index.js";
+import { GAME_ENTRIES } from "./games/index.js";
 import { Menu } from "./menu.js";
 import { StandaloneRunner } from "./runner.js";
+import { drawGameOver, type GameSession } from "./session.js";
 import { Buzzer } from "./sound.js";
 import { Keys, type KeyCode } from "./keys.js";
 
-type Screen = "menu" | "minigames" | "difficulty" | "megamix" | "standalone";
+const PREVENT_DEFAULT: ReadonlySet<string> = new Set<string>([
+  Keys.UP,
+  Keys.DOWN,
+  Keys.LEFT,
+  Keys.RIGHT,
+  Keys.SPACE,
+]);
 
-function isTypingKey(code: string): boolean {
-  return code === Keys.UP || code === Keys.DOWN || code === Keys.LEFT || code === Keys.RIGHT || code === Keys.SPACE;
-}
+type Screen =
+  | { kind: "menu"; menu: Menu }
+  | { kind: "game"; session: GameSession; paused: boolean; deathAnnounced: boolean };
 
 function canvasPoint(canvas: HTMLCanvasElement, event: MouseEvent): [number, number] {
   const rect = canvas.getBoundingClientRect();
@@ -29,59 +36,17 @@ function start(): void {
 
   const big = new PixelFont(3);
   const small = new PixelFont(2);
-
-  let screen: Screen = "menu";
-  let app: App | null = null;
-  let runner: StandaloneRunner | null = null;
-  let paused = false;
-
   const buzzer = new Buzzer();
 
-  const playSound = (game: MiniGame): void => {
-    if (game.sounds.length === 0) return;
-    for (const name of game.sounds) buzzer.sfx(name);
-    game.sounds.length = 0;
-  };
-
-  let deathAnnounced = false;
-
-  const showMenu = (): void => {
-    screen = "menu";
-    app = null;
-    runner = null;
-    paused = false;
-    deathAnnounced = false;
-  };
-
-  const startMegamix = (startLevel: number): void => {
-    app = new App(SCREEN_W, SCREEN_H, startLevel);
-    runner = null;
-    paused = false;
-    deathAnnounced = false;
-    screen = "megamix";
-    buzzer.sfx("start");
-    buzzer.tick(0);
-  };
-
-  const startStandalone = (ctor: (typeof GAME_ENTRIES)[number]["ctor"]): void => {
-    runner = new StandaloneRunner(ctor, SCREEN_W, SCREEN_H);
-    app = null;
-    paused = false;
-    deathAnnounced = false;
-    screen = "standalone";
+  const openGame = (session: GameSession): void => {
+    session.onTick = (tick) => buzzer.tick(tick);
+    screen = { kind: "game", session, paused: false, deathAnnounced: false };
     buzzer.sfx("start");
   };
 
-  const mainMenu = new Menu(
-    "ARCADE MEGAMIX",
-    [
-      { label: "PLAY", onSelect: () => (screen = "difficulty") },
-      { label: "MINI-GAMES", onSelect: () => (screen = "minigames") },
-    ],
-    big,
-    small,
-    "SELECT MODE",
-  );
+  const startMegamix = (startLevel: number): void => openGame(new App(SCREEN_W, SCREEN_H, startLevel));
+  const startStandalone = (entry: (typeof GAME_ENTRIES)[number]): void =>
+    openGame(new StandaloneRunner(entry.ctor, SCREEN_W, SCREEN_H));
 
   const difficultyMenu = new Menu(
     "DIFFICULTY",
@@ -99,122 +64,34 @@ function start(): void {
   const miniMenu = new Menu(
     "MINI-GAMES",
     [
-      ...GAME_ENTRIES.map((entry) => ({
-        label: entry.label,
-        onSelect: () => startStandalone(entry.ctor),
-      })),
+      ...GAME_ENTRIES.map((entry) => ({ label: entry.label, onSelect: () => startStandalone(entry) })),
       { label: "BACK", onSelect: showMenu },
     ],
     big,
     small,
   );
 
-  const activeMenu = (): Menu | null =>
-    screen === "menu"
-      ? mainMenu
-      : screen === "minigames"
-        ? miniMenu
-        : screen === "difficulty"
-          ? difficultyMenu
-          : null;
+  const mainMenu = new Menu(
+    "ARCADE MEGAMIX",
+    [
+      { label: "PLAY", onSelect: () => (screen = { kind: "menu", menu: difficultyMenu }) },
+      { label: "MINI-GAMES", onSelect: () => (screen = { kind: "menu", menu: miniMenu }) },
+    ],
+    big,
+    small,
+    "SELECT MODE",
+  );
+
+  let screen: Screen = { kind: "menu", menu: mainMenu };
+
+  function showMenu(): void {
+    screen = { kind: "menu", menu: mainMenu };
+  }
 
   for (const menu of [mainMenu, difficultyMenu, miniMenu]) {
     menu.onMove = () => buzzer.sfx("menuMove");
     menu.onActivate = () => buzzer.sfx("menuSelect");
   }
-
-  const keyDown = (event: KeyboardEvent): void => {
-    const code = event.code as KeyCode;
-    if (isTypingKey(code)) event.preventDefault();
-    buzzer.resume();
-
-    const menu = activeMenu();
-    if (menu !== null) {
-      if ((screen === "minigames" || screen === "difficulty") && code === Keys.ESC) {
-        buzzer.sfx("quit");
-        showMenu();
-        return;
-      }
-      menu.handleKeyDown(code);
-      return;
-    }
-
-    const dead = screen === "megamix" ? app!.gameOver : !runner!.game.alive;
-
-    if (code === Keys.ESC) {
-      if (!dead) {
-        paused = !paused;
-        buzzer.sfx(paused ? "pause" : "resume");
-      }
-      return;
-    }
-    if (code === Keys.P) {
-      if (!dead) {
-        paused = !paused;
-        buzzer.sfx(paused ? "pause" : "resume");
-      }
-      return;
-    }
-    if (paused && code === Keys.Q) {
-      buzzer.sfx("quit");
-      showMenu();
-      return;
-    }
-    if (paused) return;
-
-    if (dead) {
-      if (code === Keys.Q) {
-        buzzer.sfx("quit");
-        showMenu();
-        return;
-      }
-      if (code === Keys.R) {
-        deathAnnounced = false;
-        if (screen === "megamix") {
-          app!.restart();
-          buzzer.tick(0);
-        } else {
-          runner!.game.reset();
-        }
-      }
-      return;
-    }
-
-    if (screen === "megamix") app!.handleKeyDown(code);
-    else runner!.handleKeyDown(code);
-  };
-
-  const keyUp = (event: KeyboardEvent): void => {
-    const code = event.code as KeyCode;
-    if (isTypingKey(code)) event.preventDefault();
-    if (activeMenu() !== null) return;
-    if (screen === "megamix") app!.handleKeyUp(code);
-    else runner!.handleKeyUp(code);
-  };
-
-  const mouseMove = (event: MouseEvent): void => {
-    const menu = activeMenu();
-    if (menu === null) {
-      canvas.style.cursor = "default";
-      return;
-    }
-    const [x, y] = canvasPoint(canvas, event);
-    menu.handleMouseMove(x, y);
-    canvas.style.cursor = menu.isOver(x, y) ? "pointer" : "default";
-  };
-
-  const click = (event: MouseEvent): void => {
-    buzzer.resume();
-    const menu = activeMenu();
-    if (menu === null) return;
-    const [x, y] = canvasPoint(canvas, event);
-    menu.handleClick(x, y);
-  };
-
-  window.addEventListener("keydown", keyDown);
-  window.addEventListener("keyup", keyUp);
-  canvas.addEventListener("mousemove", mouseMove);
-  canvas.addEventListener("click", click);
 
   const drawPause = (): void => {
     drawOverlay(ctx, SCREEN_W, SCREEN_H, big, small, "PAUSED", [
@@ -222,41 +99,102 @@ function start(): void {
     ]);
   };
 
+  const keyDown = (event: KeyboardEvent): void => {
+    const code = event.code as KeyCode;
+    if (PREVENT_DEFAULT.has(code)) event.preventDefault();
+    buzzer.resume();
+
+    if (screen.kind === "menu") {
+      if (screen.menu !== mainMenu && code === Keys.ESC) {
+        buzzer.sfx("quit");
+        showMenu();
+        return;
+      }
+      screen.menu.handleKeyDown(code);
+      return;
+    }
+
+    const { session } = screen;
+
+    if (!session.gameOver && (code === Keys.ESC || code === Keys.P)) {
+      screen.paused = !screen.paused;
+      buzzer.sfx(screen.paused ? "pause" : "resume");
+      return;
+    }
+    if (screen.paused) {
+      if (code === Keys.Q) {
+        buzzer.sfx("quit");
+        showMenu();
+      }
+      return;
+    }
+    if (session.gameOver) {
+      if (code === Keys.Q) {
+        buzzer.sfx("quit");
+        showMenu();
+      } else if (code === Keys.R) {
+        screen.deathAnnounced = false;
+        session.restart();
+      }
+      return;
+    }
+
+    session.handleKeyDown(code);
+  };
+
+  const keyUp = (event: KeyboardEvent): void => {
+    const code = event.code as KeyCode;
+    if (PREVENT_DEFAULT.has(code)) event.preventDefault();
+    if (screen.kind === "game") screen.session.handleKeyUp(code);
+  };
+
+  const mouseMove = (event: MouseEvent): void => {
+    if (screen.kind !== "menu") {
+      canvas.style.cursor = "default";
+      return;
+    }
+    const [x, y] = canvasPoint(canvas, event);
+    screen.menu.handleMouseMove(x, y);
+    canvas.style.cursor = screen.menu.isOver(x, y) ? "pointer" : "default";
+  };
+
+  const click = (event: MouseEvent): void => {
+    buzzer.resume();
+    if (screen.kind !== "menu") return;
+    const [x, y] = canvasPoint(canvas, event);
+    screen.menu.handleClick(x, y);
+  };
+
+  window.addEventListener("keydown", keyDown);
+  window.addEventListener("keyup", keyUp);
+  canvas.addEventListener("mousemove", mouseMove);
+  canvas.addEventListener("click", click);
+
   let last = performance.now();
   const frame = (now: number): void => {
     let dt = (now - last) / 1000;
     last = now;
     if (dt > 0.1) dt = 0.1;
 
-    if (screen === "menu") {
-      mainMenu.draw(ctx, SCREEN_W, SCREEN_H);
-    } else if (screen === "minigames") {
-      miniMenu.draw(ctx, SCREEN_W, SCREEN_H);
-    } else if (screen === "difficulty") {
-      difficultyMenu.draw(ctx, SCREEN_W, SCREEN_H);
-    } else if (screen === "megamix") {
-      if (!paused) {
-        const tick = app!.update(dt);
-        if (tick >= 0) buzzer.tick(tick);
-        for (const g of app!.games) playSound(g);
-      }
-      if (app!.gameOver && !deathAnnounced) {
-        deathAnnounced = true;
-        buzzer.sfx("death");
-      }
-      app!.draw(ctx);
-      if (paused) drawPause();
+    if (screen.kind === "menu") {
+      screen.menu.draw(ctx, SCREEN_W, SCREEN_H);
     } else {
-      if (!paused) {
-        runner!.update(dt);
-        playSound(runner!.game);
+      const { session } = screen;
+      if (!screen.paused) {
+        session.update(dt);
+        for (const name of session.drainSounds()) buzzer.sfx(name);
       }
-      if (!runner!.game.alive && !deathAnnounced) {
-        deathAnnounced = true;
+      session.draw(ctx);
+
+      if (session.gameOver && !screen.deathAnnounced) {
+        screen.deathAnnounced = true;
         buzzer.sfx("death");
       }
-      runner!.draw(ctx);
-      if (paused) drawPause();
+      if (session.gameOver) {
+        drawGameOver(ctx, SCREEN_W, SCREEN_H, big, small, session.score);
+      } else if (screen.paused) {
+        drawPause();
+      }
     }
 
     requestAnimationFrame(frame);

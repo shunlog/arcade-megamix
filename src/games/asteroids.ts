@@ -1,6 +1,5 @@
 import {
   ASTEROID_GRAY,
-  BLACK,
   BULLET_YELLOW,
   SCORE_ASTEROID_BIG,
   SCORE_ASTEROID_SMALL,
@@ -20,7 +19,7 @@ export interface Asteroid {
 }
 
 export function isBig(a: Asteroid): boolean {
-  return a.radius >= 20;
+  return a.radius >= AsteroidsGame.BIG_RADIUS;
 }
 
 export interface Bullet {
@@ -39,6 +38,22 @@ export class AsteroidsGame extends MiniGame {
   static readonly FRICTION = 0.4;
   static readonly MAX_BULLETS = 8;
   static readonly FIRE_COOLDOWN = 0.18;
+  static readonly BIG_RADIUS = 20;
+  static readonly SHIP_SIZE = 14;
+  static readonly SHIP_COLLISION_RADIUS = 6;
+  static readonly BULLET_SPEED = 480.0;
+  static readonly BULLET_LIFE = 1.2;
+  static readonly BULLET_RADIUS = 3;
+  static readonly STROKE_WIDTH = 2;
+  static readonly START_WAVE = 3;
+  static readonly WAVE_ON_LOOP = 2;
+  static readonly ASTEROID_SPEED_MIN = 40;
+  static readonly ASTEROID_SPEED_MAX = 90;
+  static readonly ASTEROID_RADIUS_MIN = 18;
+  static readonly ASTEROID_RADIUS_MAX = 30;
+  static readonly SPLIT_ANGLE = 0.7;
+  static readonly SPLIT_SPEED_FACTOR = 1.2;
+  static readonly SPLIT_RADIUS_FACTOR = 0.55;
 
   readonly rng: Rng;
 
@@ -70,10 +85,10 @@ export class AsteroidsGame extends MiniGame {
     this.asteroids = [];
     this.score = 0;
     this.alive = true;
-    this.addWave(3);
+    this.addWave(AsteroidsGame.START_WAVE);
   }
 
-  addWave(count = 2): void {
+  addWave(count = AsteroidsGame.WAVE_ON_LOOP): void {
     for (let i = 0; i < count; i++) {
       const edge = this.rng.choice(["top", "bottom", "left", "right"] as const);
       let x: number;
@@ -91,14 +106,14 @@ export class AsteroidsGame extends MiniGame {
         x = this.width;
         y = this.rng.uniform(0, this.height);
       }
-      const speed = this.rng.uniform(40, 90);
+      const speed = this.rng.uniform(AsteroidsGame.ASTEROID_SPEED_MIN, AsteroidsGame.ASTEROID_SPEED_MAX);
       const heading = this.rng.uniform(0, Math.PI * 2);
       this.asteroids.push({
         x,
         y,
         vx: Math.cos(heading) * speed,
         vy: Math.sin(heading) * speed,
-        radius: this.rng.uniform(18, 30),
+        radius: this.rng.uniform(AsteroidsGame.ASTEROID_RADIUS_MIN, AsteroidsGame.ASTEROID_RADIUS_MAX),
       });
     }
   }
@@ -158,13 +173,12 @@ export class AsteroidsGame extends MiniGame {
 
   private fire(): void {
     if (this.bullets.length >= AsteroidsGame.MAX_BULLETS) return;
-    const speed = 480.0;
     this.bullets.push({
       x: this.shipX,
       y: this.shipY,
-      vx: Math.cos(this.angle) * speed,
-      vy: Math.sin(this.angle) * speed,
-      life: 1.2,
+      vx: Math.cos(this.angle) * AsteroidsGame.BULLET_SPEED,
+      vy: Math.sin(this.angle) * AsteroidsGame.BULLET_SPEED,
+      life: AsteroidsGame.BULLET_LIFE,
     });
     this.fireTimer = AsteroidsGame.FIRE_COOLDOWN;
     this.fireQueued = false;
@@ -192,21 +206,21 @@ export class AsteroidsGame extends MiniGame {
 
   private split(a: Asteroid): void {
     for (const sign of [-1, 1]) {
-      const heading = Math.atan2(a.vy, a.vx) + sign * 0.7;
-      const speed = Math.hypot(a.vx, a.vy) * 1.2;
+      const heading = Math.atan2(a.vy, a.vx) + sign * AsteroidsGame.SPLIT_ANGLE;
+      const speed = Math.hypot(a.vx, a.vy) * AsteroidsGame.SPLIT_SPEED_FACTOR;
       this.asteroids.push({
         x: a.x,
         y: a.y,
         vx: Math.cos(heading) * speed,
         vy: Math.sin(heading) * speed,
-        radius: a.radius * 0.55,
+        radius: a.radius * AsteroidsGame.SPLIT_RADIUS_FACTOR,
       });
     }
   }
 
   private collideShip(): void {
     for (const a of this.asteroids) {
-      if (Math.hypot(this.shipX - a.x, this.shipY - a.y) <= a.radius + 6) {
+      if (Math.hypot(this.shipX - a.x, this.shipY - a.y) <= a.radius + AsteroidsGame.SHIP_COLLISION_RADIUS) {
         this.alive = false;
         return;
       }
@@ -214,22 +228,28 @@ export class AsteroidsGame extends MiniGame {
   }
 
   override draw(ctx: CanvasRenderingContext2D): void {
-    ctx.fillStyle = `rgb(${BLACK[0]},${BLACK[1]},${BLACK[2]})`;
-    ctx.fillRect(0, 0, this.width, this.height);
+    this.clear(ctx);
 
     for (const a of this.asteroids) {
-      strokeCircle(ctx, ASTEROID_GRAY, Math.round(a.x), Math.round(a.y), Math.round(a.radius), 2);
+      strokeCircle(
+        ctx,
+        ASTEROID_GRAY,
+        Math.round(a.x),
+        Math.round(a.y),
+        Math.round(a.radius),
+        AsteroidsGame.STROKE_WIDTH,
+      );
     }
 
     for (const b of this.bullets) {
-      fillCircle(ctx, BULLET_YELLOW, Math.round(b.x), Math.round(b.y), 3);
+      fillCircle(ctx, BULLET_YELLOW, Math.round(b.x), Math.round(b.y), AsteroidsGame.BULLET_RADIUS);
     }
 
     this.drawShip(ctx);
   }
 
   private drawShip(ctx: CanvasRenderingContext2D): void {
-    const size = 14;
+    const size = AsteroidsGame.SHIP_SIZE;
     const nose: [number, number] = [
       this.shipX + Math.cos(this.angle) * size,
       this.shipY + Math.sin(this.angle) * size,
@@ -242,6 +262,6 @@ export class AsteroidsGame extends MiniGame {
       this.shipX + Math.cos(this.angle - 2.5) * size,
       this.shipY + Math.sin(this.angle - 2.5) * size,
     ];
-    strokePolygon(ctx, SHIP_WHITE, [nose, left, right], 2);
+    strokePolygon(ctx, SHIP_WHITE, [nose, left, right], AsteroidsGame.STROKE_WIDTH);
   }
 }

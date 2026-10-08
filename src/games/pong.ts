@@ -1,5 +1,4 @@
 import {
-  BLACK,
   GRAY,
   PONG_ACCENT,
   PONG_WHITE,
@@ -35,10 +34,17 @@ export class PongGame extends MiniGame {
   static readonly PADDLE_W = 12;
   static readonly PADDLE_H = 80;
   static readonly PADDLE_SPEED = 420.0;
+  static readonly PADDLE_X = 20;
   static readonly BALL_SIZE = 12;
   static readonly BALL_SPEED = 360.0;
   static readonly AI_SPEED = 300.0;
   static readonly BALL_SPAWN_INTERVAL = 5.0;
+  static readonly SERVE_VY_RANGE = 0.5;
+  static readonly BOUNCE_SPEED_FACTOR = 1.4;
+  static readonly MIN_BOUNCE_SPEED = 40;
+  static readonly NET_DASH = 24;
+  static readonly NET_DASH_HEIGHT = 12;
+  static readonly NET_WIDTH = 4;
 
   readonly rng: Rng;
 
@@ -71,7 +77,7 @@ export class PongGame extends MiniGame {
       x: this.width / 2,
       y: this.height / 2,
       vx: PongGame.BALL_SPEED * direction,
-      vy: PongGame.BALL_SPEED * this.rng.uniform(-0.5, 0.5),
+      vy: PongGame.BALL_SPEED * this.rng.uniform(-PongGame.SERVE_VY_RANGE, PongGame.SERVE_VY_RANGE),
     };
   }
 
@@ -79,7 +85,7 @@ export class PongGame extends MiniGame {
     ball.x = this.width / 2;
     ball.y = this.height / 2;
     ball.vx = PongGame.BALL_SPEED * direction;
-    ball.vy = PongGame.BALL_SPEED * this.rng.uniform(-0.5, 0.5);
+    ball.vy = PongGame.BALL_SPEED * this.rng.uniform(-PongGame.SERVE_VY_RANGE, PongGame.SERVE_VY_RANGE);
   }
 
   get ballX(): number {
@@ -154,9 +160,9 @@ export class PongGame extends MiniGame {
 
   private collidePaddles(ball: Ball): void {
     const rect: Rect = { x: ball.x, y: ball.y, w: PongGame.BALL_SIZE, h: PongGame.BALL_SIZE };
-    const player: Rect = { x: 20, y: this.playerY, w: PongGame.PADDLE_W, h: PongGame.PADDLE_H };
+    const player: Rect = { x: PongGame.PADDLE_X, y: this.playerY, w: PongGame.PADDLE_W, h: PongGame.PADDLE_H };
     const ai: Rect = {
-      x: this.width - 20 - PongGame.PADDLE_W,
+      x: this.width - PongGame.PADDLE_X - PongGame.PADDLE_W,
       y: this.aiY,
       w: PongGame.PADDLE_W,
       h: PongGame.PADDLE_H,
@@ -176,24 +182,23 @@ export class PongGame extends MiniGame {
 
   private bounce(ball: Ball, offset: number): void {
     ball.vx *= -1;
-    ball.vy = offset * PongGame.BALL_SPEED * 1.4;
-    if (Math.abs(ball.vy) < 40) {
-      ball.vy = ball.vy >= 0 ? 40 : -40;
+    ball.vy = offset * PongGame.BALL_SPEED * PongGame.BOUNCE_SPEED_FACTOR;
+    if (Math.abs(ball.vy) < PongGame.MIN_BOUNCE_SPEED) {
+      ball.vy = ball.vy >= 0 ? PongGame.MIN_BOUNCE_SPEED : -PongGame.MIN_BOUNCE_SPEED;
     }
   }
 
   override draw(ctx: CanvasRenderingContext2D): void {
-    ctx.fillStyle = `rgb(${BLACK[0]},${BLACK[1]},${BLACK[2]})`;
-    ctx.fillRect(0, 0, this.width, this.height);
-    for (let y = 0; y < this.height; y += 24) {
-      fillRect(ctx, GRAY, this.width / 2 - 2, y, 4, 12);
+    this.clear(ctx);
+    for (let y = 0; y < this.height; y += PongGame.NET_DASH) {
+      fillRect(ctx, GRAY, this.width / 2 - PongGame.NET_WIDTH / 2, y, PongGame.NET_WIDTH, PongGame.NET_DASH_HEIGHT);
     }
 
-    fillRect(ctx, PONG_ACCENT, 20, this.playerY, PongGame.PADDLE_W, PongGame.PADDLE_H);
+    fillRect(ctx, PONG_ACCENT, PongGame.PADDLE_X, this.playerY, PongGame.PADDLE_W, PongGame.PADDLE_H);
     fillRect(
       ctx,
       PONG_WHITE,
-      this.width - 20 - PongGame.PADDLE_W,
+      this.width - PongGame.PADDLE_X - PongGame.PADDLE_W,
       this.aiY,
       PongGame.PADDLE_W,
       PongGame.PADDLE_H,

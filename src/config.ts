@@ -152,8 +152,8 @@ export class PixelFont {
     return (GLYPH_W + GLYPH_GAP) * this.scale;
   }
 
-  render(text: string, color: Color, scale: number = this.scale): HTMLCanvasElement {
-    const s = Math.max(1, Math.floor(scale));
+  render(text: string, color: Color): HTMLCanvasElement {
+    const s = this.scale;
     const chars = Array.from(text.toUpperCase());
     const advance = (GLYPH_W + GLYPH_GAP) * s;
     const width = Math.max(1, chars.length * advance - GLYPH_GAP * s);
@@ -185,9 +185,8 @@ export class PixelFont {
     color: Color,
     x: number,
     y: number,
-    scale: number = this.scale,
   ): HTMLCanvasElement {
-    const surface = this.render(text, color, scale);
+    const surface = this.render(text, color);
     ctx.drawImage(surface, x, y);
     return surface;
   }

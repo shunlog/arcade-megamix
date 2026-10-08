@@ -166,6 +166,7 @@ src/
   menu.ts           # canvas startup / mini-game menus
   app.ts            # RoundManager + App (tick cycle and game switching)
   runner.ts         # standalone mini-game runner
+  session.ts        # shared GameSession surface + HUD/game-over helpers
   sound.ts          # Web Audio buzz primitive (oscillator + gain)
   config.ts         # screen, palette, scoring, level timing, pixel font
   keys.ts           # KeyboardEvent.code constants

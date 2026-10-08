@@ -1,4 +1,4 @@
-import { BLACK, SCORE_TRON_KILL, TRON_ENEMY, TRON_GRID, TRON_PLAYER } from "../config.js";
+import { rgb, SCORE_TRON_KILL, TRON_ENEMY, TRON_GRID, TRON_PLAYER } from "../config.js";
 import { fillRect } from "../draw.js";
 import { Keys, type KeyCode } from "../keys.js";
 import { defaultRng, type Rng } from "../rng.js";
@@ -34,6 +34,8 @@ export class TronGame extends MiniGame {
   static readonly CELL = 20;
   static readonly STEP_TIME = 0.11;
   static readonly MAX_QUEUE = 2;
+  static readonly TRAIL_PAD = 1;
+  static readonly GRID_HALF_PIXEL = 0.5;
 
   readonly cols: number;
   readonly rows: number;
@@ -104,7 +106,7 @@ export class TronGame extends MiniGame {
   }
 
   get riders(): Rider[] {
-    return [this.player, this.enemy].filter((r): r is Rider => r != null);
+    return [this.player, this.enemy];
   }
 
   tick(): void {
@@ -214,33 +216,34 @@ export class TronGame extends MiniGame {
   }
 
   override draw(ctx: CanvasRenderingContext2D): void {
-    ctx.fillStyle = `rgb(${BLACK[0]},${BLACK[1]},${BLACK[2]})`;
-    ctx.fillRect(0, 0, this.width, this.height);
-    ctx.strokeStyle = `rgb(${TRON_GRID[0]},${TRON_GRID[1]},${TRON_GRID[2]})`;
+    this.clear(ctx);
+    ctx.strokeStyle = rgb(TRON_GRID);
     ctx.lineWidth = 1;
+    const grid = TronGame.GRID_HALF_PIXEL;
     for (let x = 0; x <= this.width; x += TronGame.CELL) {
       ctx.beginPath();
-      ctx.moveTo(x + 0.5, 0);
-      ctx.lineTo(x + 0.5, this.height);
+      ctx.moveTo(x + grid, 0);
+      ctx.lineTo(x + grid, this.height);
       ctx.stroke();
     }
     for (let y = 0; y <= this.height; y += TronGame.CELL) {
       ctx.beginPath();
-      ctx.moveTo(0, y + 0.5);
-      ctx.lineTo(this.width, y + 0.5);
+      ctx.moveTo(0, y + grid);
+      ctx.lineTo(this.width, y + grid);
       ctx.stroke();
     }
 
+    const pad = TronGame.TRAIL_PAD;
     for (const r of this.riders) {
       for (const key of r.trail) {
         const [x, y] = key.split(",").map(Number);
         fillRect(
           ctx,
           r.color,
-          x * TronGame.CELL + 1,
-          y * TronGame.CELL + 1,
-          TronGame.CELL - 2,
-          TronGame.CELL - 2,
+          x * TronGame.CELL + pad,
+          y * TronGame.CELL + pad,
+          TronGame.CELL - pad * 2,
+          TronGame.CELL - pad * 2,
         );
       }
     }

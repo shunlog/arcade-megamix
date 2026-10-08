@@ -1,3 +1,4 @@
+import { BLACK, rgb } from "../config.js";
 import type { KeyCode } from "../keys.js";
 import type { Sfx } from "../sound.js";
 
@@ -33,6 +34,11 @@ export abstract class MiniGame {
 
   protected sfx(name: Sfx): void {
     this.sounds.push(name);
+  }
+
+  protected clear(ctx: CanvasRenderingContext2D): void {
+    ctx.fillStyle = rgb(BLACK);
+    ctx.fillRect(0, 0, this.width, this.height);
   }
 
   addScore(amount: number): void {

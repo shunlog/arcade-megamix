@@ -18,8 +18,9 @@ import { GAME_ORDER, type MiniGame } from "./games/index.js";
 import { AsteroidsGame } from "./games/asteroids.js";
 import { PongGame } from "./games/pong.js";
 import { SnakeGame } from "./games/snake.js";
-import { drawOverlay } from "./draw.js";
-import { Keys, type KeyCode } from "./keys.js";
+import { drawScore, HUD_MARGIN, HUD_TOP, type GameSession } from "./session.js";
+import type { KeyCode } from "./keys.js";
+import type { Sfx } from "./sound.js";
 
 export type RoundPhase = "play" | "pause";
 
@@ -85,7 +86,14 @@ export class RoundManager {
   }
 }
 
-export class App {
+export class App implements GameSession {
+  static readonly SIGN_SIZE = 140;
+  static readonly SIGN_BAR_RATIO = 0.3;
+  static readonly SIGN_GAP_RATIO = 0.12;
+  static readonly TICK_RING = 4;
+
+  onTick: ((tick: number) => void) | null = null;
+
   readonly width: number;
   readonly height: number;
   readonly big: PixelFont;
@@ -106,6 +114,22 @@ export class App {
     this.applyMultipliers();
   }
 
+  get active(): MiniGame {
+    return this.games[this.round.index];
+  }
+
+  get name(): string {
+    return this.active.name;
+  }
+
+  get score(): number {
+    return this.totalScore;
+  }
+
+  get totalScore(): number {
+    return this.games.reduce((sum, g) => sum + g.score, 0);
+  }
+
   private applyMultipliers(): void {
     const speed = speedMultiplier(this.round.level);
     const score = scoreMultiplier(this.round.level);
@@ -115,26 +139,29 @@ export class App {
     }
   }
 
-  get active(): MiniGame {
-    return this.games[this.round.index];
-  }
-
-  get totalScore(): number {
-    return this.games.reduce((sum, g) => sum + g.score, 0);
-  }
-
   restart(): void {
     this.games = GAME_ORDER.map((cls) => new cls(this.width, this.height));
     this.round = new RoundManager(this.games.length, LEVEL_START, LEVEL_STEP, LEVEL_FLOOR, this.startLevel);
     this.applyMultipliers();
     this.gameOver = false;
+    this.onTick?.(0);
+  }
+
+  drainSounds(): Sfx[] {
+    const sounds: Sfx[] = [];
+    for (const g of this.games) {
+      if (g.sounds.length === 0) continue;
+      sounds.push(...g.sounds);
+      g.sounds.length = 0;
+    }
+    return sounds;
   }
 
   private doSwitch(): void {
     const wrapped = this.round.advance();
     if (wrapped) {
       for (const g of this.games) {
-        if (g instanceof AsteroidsGame) g.addWave(2);
+        if (g instanceof AsteroidsGame) g.addWave(AsteroidsGame.WAVE_ON_LOOP);
         if (g instanceof PongGame) g.addBall();
         if (g instanceof SnakeGame) g.addApple();
       }
@@ -142,8 +169,8 @@ export class App {
     for (const g of this.games) g.pressed.clear();
   }
 
-  update(dt: number): number {
-    if (this.gameOver) return -1;
+  update(dt: number): void {
+    if (this.gameOver) return;
 
     const tick = this.round.tick(dt);
     if (tick === 0) this.applyMultipliers();
@@ -153,51 +180,34 @@ export class App {
     if (this.round.phase === "play") {
       if (!this.active.update(dt)) this.gameOver = true;
     }
-    return tick;
+    if (tick >= 0) this.onTick?.(tick);
   }
 
-  handleKeyDown(key: KeyCode): boolean {
-    if (key === Keys.ESC) return false;
-    if (this.gameOver && key === Keys.R) {
-      this.restart();
-      return true;
-    }
-    if (!this.gameOver && this.round.phase === "play") this.active.onKeyDown(key);
-    return true;
+  handleKeyDown(key: KeyCode): void {
+    if (!this.gameOver) this.active.onKeyDown(key);
   }
 
   handleKeyUp(key: KeyCode): void {
-    if (!this.gameOver && this.round.phase === "play") this.active.onKeyUp(key);
+    if (!this.gameOver) this.active.onKeyUp(key);
   }
 
   draw(ctx: CanvasRenderingContext2D): void {
     this.active.draw(ctx);
 
-    const level = this.big.draw(ctx, `LV ${this.round.level}`, WHITE, 16, 12);
-    this.small.draw(ctx, this.active.name, GRAY, 18, 12 + level.height + 6);
+    const level = this.big.draw(ctx, `LV ${this.round.level}`, WHITE, HUD_MARGIN, HUD_TOP);
+    this.small.draw(ctx, this.active.name, GRAY, HUD_MARGIN + 2, HUD_TOP + level.height + 6);
 
-    const score = this.big.render(String(this.totalScore).padStart(6, "0"), WHITE);
-    ctx.drawImage(score, this.width - score.width - 16, 12);
-
-    const mult = this.small.render(`x${scoreMultiplier(this.round.level).toFixed(1)}`, GRAY);
-    ctx.drawImage(mult, this.width - mult.width - 16, 12 + score.height + 6);
+    drawScore(ctx, this.width, this.big, this.small, this.totalScore, `x${scoreMultiplier(this.round.level).toFixed(1)}`);
 
     if (!this.gameOver && this.round.phase !== "play") {
       this.drawPhaseSign(ctx);
     }
 
     this.drawTickRing(ctx);
-
-    if (this.gameOver) {
-      drawOverlay(ctx, this.width, this.height, this.big, this.small, "GAME OVER", [
-        { text: `FINAL SCORE ${this.totalScore}`, color: GRAY },
-        { text: "R = RESTART    Q = MENU", color: GRAY },
-      ]);
-    }
   }
 
   private drawTickRing(ctx: CanvasRenderingContext2D): void {
-    const t = 4;
+    const t = App.TICK_RING;
     const w = this.width;
     const h = this.height;
     const innerH = h - t * 2;
@@ -225,15 +235,15 @@ export class App {
   private drawPhaseSign(ctx: CanvasRenderingContext2D): void {
     const cx = this.width / 2;
     const cy = this.height / 2;
-    const size = 140;
+    const size = App.SIGN_SIZE;
 
     ctx.save();
     ctx.fillStyle = "rgba(8,8,16,0.55)";
     ctx.fillRect(0, 0, this.width, this.height);
     ctx.fillStyle = rgb(WHITE);
 
-    const bar = size * 0.3;
-    const half = size * 0.12;
+    const bar = size * App.SIGN_BAR_RATIO;
+    const half = size * App.SIGN_GAP_RATIO;
     ctx.fillRect(cx - half - bar, cy - size / 2, bar, size);
     ctx.fillRect(cx + half, cy - size / 2, bar, size);
     ctx.restore();

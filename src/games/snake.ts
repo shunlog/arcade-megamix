@@ -1,6 +1,5 @@
 import {
   APPLE_RED,
-  BLACK,
   DARK,
   SCORE_SNAKE_APPLE,
   SNAKE_GREEN,
@@ -25,6 +24,11 @@ export class SnakeGame extends MiniGame {
   static readonly START_LEN = 3;
   static readonly STEP_TIME = 0.11;
   static readonly MAX_QUEUE = 3;
+  static readonly CELL_PAD = 1;
+  static readonly BODY_CORNER = 5;
+  static readonly EYE_OFFSET = 3;
+  static readonly EYE_RADIUS = 2;
+  static readonly APPLE_INSET = 2;
 
   readonly cols: number;
   readonly rows: number;
@@ -156,26 +160,33 @@ export class SnakeGame extends MiniGame {
   }
 
   override draw(ctx: CanvasRenderingContext2D): void {
-    ctx.fillStyle = `rgb(${BLACK[0]},${BLACK[1]},${BLACK[2]})`;
-    ctx.fillRect(0, 0, this.width, this.height);
+    this.clear(ctx);
     const size = SnakeGame.CELL;
+    const pad = SnakeGame.CELL_PAD;
 
     this.snake.forEach(([x, y], i) => {
       const color = i === 0 ? SNAKE_HEAD : SNAKE_GREEN;
-      fillRect(ctx, color, x * size + 1, y * size + 1, size - 2, size - 2, 5);
+      fillRect(ctx, color, x * size + pad, y * size + pad, size - pad * 2, size - pad * 2, SnakeGame.BODY_CORNER);
     });
 
     const [hx, hy] = this.snake[0];
     const cx = hx * size + Math.floor(size / 2);
     const cy = hy * size + Math.floor(size / 2);
     const [dx, dy] = this.direction;
-    const ox = dy * 3;
-    const oy = dx * 3;
-    fillCircle(ctx, DARK, cx + dx * 3 + ox, cy + dy * 3 + oy, 2);
-    fillCircle(ctx, DARK, cx + dx * 3 - ox, cy + dy * 3 - oy, 2);
+    const off = SnakeGame.EYE_OFFSET;
+    const ox = dy * off;
+    const oy = dx * off;
+    fillCircle(ctx, DARK, cx + dx * off + ox, cy + dy * off + oy, SnakeGame.EYE_RADIUS);
+    fillCircle(ctx, DARK, cx + dx * off - ox, cy + dy * off - oy, SnakeGame.EYE_RADIUS);
 
     for (const [ax, ay] of this.apples) {
-      fillCircle(ctx, APPLE_RED, ax * size + Math.floor(size / 2), ay * size + Math.floor(size / 2), size / 2 - 2);
+      fillCircle(
+        ctx,
+        APPLE_RED,
+        ax * size + Math.floor(size / 2),
+        ay * size + Math.floor(size / 2),
+        size / 2 - SnakeGame.APPLE_INSET,
+      );
     }
   }
 }
