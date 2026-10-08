@@ -1,6 +1,3 @@
-// Logic tests for the game engine.
-// Run with: pnpm test  (builds first, then uses Node's built-in test runner).
-
 import test from "node:test";
 import assert from "node:assert/strict";
 
@@ -35,18 +32,16 @@ test("a tick is an eighth of the level duration", () => {
 });
 
 test("completing a cycle raises the level only when the next cycle plays", () => {
-  const rm = new RoundManager(1); // one game: every swap completes a cycle
+  const rm = new RoundManager(1);
   const dt = rm.tickDuration + 1e-6;
   assert.equal(rm.duration, 10);
 
-  // Seven ticks reach the swap; the level does not rise during the pause tick.
   for (let i = 0; i < 7; i++) rm.tick(dt);
   assert.equal(rm.tickIndex, 7);
   assert.equal(rm.advance(), true);
   assert.equal(rm.level, 0);
   assert.equal(rm.duration, 10);
 
-  // Wrapping to tick 0 begins the new level and shortens the duration.
   assert.equal(rm.tick(dt), 0);
   assert.equal(rm.level, 1);
   assert.equal(rm.duration, 9);
@@ -61,9 +56,9 @@ test("the tick duration stays constant across a wrapping cycle", () => {
     rm.tick(dt);
     assert.ok(Math.abs(rm.tickDuration - tick) < 1e-9);
   }
-  rm.advance(); // the cycle wraps
-  assert.ok(Math.abs(rm.tickDuration - tick) < 1e-9); // unchanged during the pause tick
-  rm.tick(dt); // tick 0 of the new level
+  rm.advance();
+  assert.ok(Math.abs(rm.tickDuration - tick) < 1e-9);
+  rm.tick(dt);
   assert.ok(rm.tickDuration < tick);
 });
 
@@ -71,17 +66,14 @@ test("the cycle is six play ticks then a two-tick pause", () => {
   const rm = new RoundManager(5);
   const dt = rm.tickDuration + 1e-6;
 
-  // Ticks 1..5 remain in play.
   for (let i = 1; i <= 5; i++) {
     assert.equal(rm.tick(dt), i);
     assert.equal(rm.phase, "play");
   }
-  // Tick 6 pauses, tick 7 swaps in the next game (still paused).
   assert.equal(rm.tick(dt), 6);
   assert.equal(rm.phase, "pause");
   assert.equal(rm.tick(dt), 7);
   assert.equal(rm.phase, "switch");
-  // The next boundary starts a fresh playing cycle.
   assert.equal(rm.tick(dt), 0);
   assert.equal(rm.phase, "play");
 });
@@ -96,20 +88,20 @@ test("advance wraps the game index at the end of a cycle", () => {
   const rm = new RoundManager(5);
   for (let i = 0; i < 5; i++) rm.advance();
   assert.equal(rm.index, 0);
-  assert.equal(rm.duration, 10); // the level rises on the next tick 0
+  assert.equal(rm.duration, 10);
 });
 
 test("timeToSwitch counts down to the tick-7 switch", () => {
   const rm = new RoundManager(5);
   assert.ok(Math.abs(rm.timeToSwitch - 7 * rm.tickDuration) < 1e-9);
-  rm.tick(rm.tickDuration); // now on tick 1
+  rm.tick(rm.tickDuration);
   assert.ok(Math.abs(rm.timeToSwitch - 6 * rm.tickDuration) < 1e-9);
 });
 
 test("difficulty sets the round's starting level and survives a restart", () => {
   const app = new App(800, 600, 3);
   assert.equal(app.round.level, 3);
-  assert.equal(app.round.duration, 7); // 10 - 3 * LEVEL_STEP
+  assert.equal(app.round.duration, 7);
 
   app.restart();
   assert.equal(app.round.level, 3);
@@ -158,7 +150,7 @@ test("snake replaces an eaten apple without losing the extras", () => {
   const [hx, hy] = snake.snake[0];
   snake.apples[0] = [hx + 1, hy];
   snake.step();
-  assert.equal(snake.apples.length, 2); // one eaten, one spawned
+  assert.equal(snake.apples.length, 2);
 });
 
 test("pong ends only once every ball has been lost", () => {
@@ -168,19 +160,18 @@ test("pong ends only once every ball has been lost", () => {
   assert.equal(pong.balls.length, 2);
 
   pong.balls[0].x = -100;
-  assert.equal(pong.update(1 / 60), true); // one ball still in play
+  assert.equal(pong.update(1 / 60), true);
   assert.equal(pong.balls.length, 1);
   assert.equal(pong.alive, true);
 
   pong.balls[0].x = -100;
-  assert.equal(pong.update(1 / 60), false); // the last ball is lost
+  assert.equal(pong.update(1 / 60), false);
   assert.equal(pong.alive, false);
 });
 
 test("standalone pong spawns an extra ball every five seconds", () => {
   const runner = new StandaloneRunner(PongGame, 800, 600);
   const pong = runner.game;
-  // Park the opening ball so it cannot be lost during the wait.
   pong.balls[0].vx = 0;
   pong.balls[0].vy = 0;
   assert.equal(pong.balls.length, 1);
@@ -193,8 +184,8 @@ test("standalone pong spawns an extra ball every five seconds", () => {
 test("snake rejects reversals and can be buffered", () => {
   const snake = new SnakeGame(300, 200, seededRng(1));
   assert.equal(snake.turn(UP), true);
-  assert.equal(snake.turn(UP), false); // duplicate
-  assert.equal(snake.turn([0, 1]), false); // reversal of UP
+  assert.equal(snake.turn(UP), false);
+  assert.equal(snake.turn([0, 1]), false);
 });
 
 test("snake dies at the wall", () => {
@@ -235,8 +226,6 @@ test("pacman eats a pellet for one point", () => {
 
 test("pacman escapes a wall even when an impossible turn is buffered", () => {
   const pac = new PacmanGame(800, 600, seededRng(5));
-  // Facing up into a wall at (1,0); left is also a wall, so the buffered
-  // left turn can never fire. A later down turn must not be stuck behind it.
   pac.pacX = 1;
   pac.pacY = 1;
   pac.pacDir = [0, -1];
@@ -285,7 +274,6 @@ test("score multiplier grows at an accelerating rate", () => {
   assert.ok(Math.abs(scoreMultiplier(3) - 1.6) < 1e-9);
   assert.ok(Math.abs(scoreMultiplier(4) - 2.0) < 1e-9);
   assert.ok(Math.abs(scoreMultiplier(5) - 2.5) < 1e-9);
-  // Each step is 0.1 larger than the last.
   for (let level = 1; level < 8; level++) {
     const step = scoreMultiplier(level) - scoreMultiplier(level - 1);
     assert.ok(Math.abs(step - 0.1 * level) < 1e-9);
@@ -296,9 +284,9 @@ test("score awards are scaled and rounded up", () => {
   const pac = new PacmanGame(800, 600, seededRng(5));
   pac.scoreMultiplier = 1.6;
   pac.addScore(1);
-  assert.equal(pac.score, 2); // ceil(1.6)
+  assert.equal(pac.score, 2);
   pac.addScore(5);
-  assert.equal(pac.score, 10); // ceil(8.0) added to 2
+  assert.equal(pac.score, 10);
 });
 
 test("the app gives every mini-game the current level's score multiplier", () => {

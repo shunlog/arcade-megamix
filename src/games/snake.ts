@@ -1,9 +1,3 @@
-// Mini-game: Snake.
-//
-// Designed to feel like the Google snake doodle: grid movement, buffered turn
-// input and a snake that grows by one apple at a time. The logic is kept free
-// of any rendering so it can be tested directly.
-
 import {
   APPLE_RED,
   BLACK,
@@ -40,7 +34,6 @@ export class SnakeGame extends MiniGame {
   direction!: Vec;
   pending!: Vec[];
   moveTimer!: number;
-  /** Every apple currently on the board. Eaten ones are replaced. */
   apples!: Vec[];
 
   constructor(width: number, height: number, rng: Rng = defaultRng()) {
@@ -51,7 +44,6 @@ export class SnakeGame extends MiniGame {
     this.reset();
   }
 
-  // -- lifecycle -----------------------------------------------------------
   reset(): void {
     const cy = Math.floor(this.rows / 2);
     const cx = Math.floor(this.cols / 3);
@@ -66,16 +58,10 @@ export class SnakeGame extends MiniGame {
     this.addApple();
   }
 
-  /**
-   * Drop another apple on a random free cell. Called once per level and every
-   * time an apple is eaten, so the count can only grow between resets.
-   */
   addApple(): void {
     this.apples.push(this.randomFreeCell());
   }
 
-  // -- compatibility getter ------------------------------------------------
-  // The first apple is exposed under the old single-apple name.
   get apple(): Vec {
     return this.apples[0];
   }
@@ -84,11 +70,6 @@ export class SnakeGame extends MiniGame {
     this.apples[0] = value;
   }
 
-  // -- input ---------------------------------------------------------------
-  /**
-   * Queue a turn. Rejects reversals and duplicates of the last queued
-   * direction, which is what makes buffered input feel correct.
-   */
   turn(direction: Vec): boolean {
     const last = this.pending.length > 0 ? this.pending[this.pending.length - 1] : this.direction;
     if (direction[0] === last[0] && direction[1] === last[1]) return false;
@@ -106,11 +87,9 @@ export class SnakeGame extends MiniGame {
     else if (key === Keys.RIGHT || key === Keys.D) this.turn(RIGHT);
   }
 
-  // -- simulation ----------------------------------------------------------
   step(): void {
     if (!this.alive) return;
 
-    // Consume exactly one buffered turn per step.
     while (this.pending.length > 0) {
       const candidate = this.pending.shift()!;
       const isSame = candidate[0] === this.direction[0] && candidate[1] === this.direction[1];
@@ -154,8 +133,6 @@ export class SnakeGame extends MiniGame {
 
   override update(dt: number): boolean {
     if (!this.alive) return false;
-    // Time flows faster with the global multiplier, so the snake takes grid
-    // steps at a proportionally higher rate.
     this.moveTimer += dt * this.speedMultiplier;
     while (this.alive && this.moveTimer >= SnakeGame.STEP_TIME) {
       this.moveTimer -= SnakeGame.STEP_TIME;
@@ -178,7 +155,6 @@ export class SnakeGame extends MiniGame {
     return this.rng.choice(free);
   }
 
-  // -- rendering -----------------------------------------------------------
   override draw(ctx: CanvasRenderingContext2D): void {
     ctx.fillStyle = `rgb(${BLACK[0]},${BLACK[1]},${BLACK[2]})`;
     ctx.fillRect(0, 0, this.width, this.height);
@@ -189,7 +165,6 @@ export class SnakeGame extends MiniGame {
       fillRect(ctx, color, x * size + 1, y * size + 1, size - 2, size - 2, 5);
     });
 
-    // eyes on the head, oriented by travel direction
     const [hx, hy] = this.snake[0];
     const cx = hx * size + Math.floor(size / 2);
     const cy = hy * size + Math.floor(size / 2);

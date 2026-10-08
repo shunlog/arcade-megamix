@@ -1,8 +1,3 @@
-// Mini-game: Pong.
-//
-// The player is the left paddle. Each paddle hit is worth a point; scoring past
-// the CPU is worth a bundle. If the CPU scores, the player dies.
-
 import {
   BLACK,
   GRAY,
@@ -43,14 +38,12 @@ export class PongGame extends MiniGame {
   static readonly BALL_SIZE = 12;
   static readonly BALL_SPEED = 360.0;
   static readonly AI_SPEED = 300.0;
-  /** Seconds between bonus balls while Pong runs as a standalone game. */
   static readonly BALL_SPAWN_INTERVAL = 5.0;
 
   readonly rng: Rng;
 
   playerY!: number;
   aiY!: number;
-  /** Every ball currently in play. The run ends only when this is empty. */
   balls!: Ball[];
 
   constructor(width: number, height: number, rng: Rng = defaultRng()) {
@@ -59,7 +52,6 @@ export class PongGame extends MiniGame {
     this.reset();
   }
 
-  // -- lifecycle -----------------------------------------------------------
   reset(): void {
     this.playerY = this.height / 2 - PongGame.PADDLE_H / 2;
     this.aiY = this.height / 2 - PongGame.PADDLE_H / 2;
@@ -69,11 +61,6 @@ export class PongGame extends MiniGame {
     this.addBall();
   }
 
-  /**
-   * Spawn an extra ball at the centre of the field. A random serve direction
-   * is used unless one is given (e.g. after a goal). Called on every new
-   * level, and periodically while Pong runs on its own.
-   */
   addBall(direction?: number): void {
     const dir = direction ?? this.rng.choice([-1, 1]);
     this.balls.push(this.makeBall(dir));
@@ -88,7 +75,6 @@ export class PongGame extends MiniGame {
     };
   }
 
-  /** Re-serve a ball from the centre, heading in the given direction. */
   private serve(ball: Ball, direction: number): void {
     ball.x = this.width / 2;
     ball.y = this.height / 2;
@@ -96,8 +82,6 @@ export class PongGame extends MiniGame {
     ball.vy = PongGame.BALL_SPEED * this.rng.uniform(-0.5, 0.5);
   }
 
-  // -- compatibility getters -----------------------------------------------
-  // The first ball is exposed under the old single-ball names.
   get ballX(): number {
     return this.balls[0].x;
   }
@@ -114,7 +98,6 @@ export class PongGame extends MiniGame {
     return this.balls[0].vy;
   }
 
-  // -- simulation ----------------------------------------------------------
   override update(dt: number): boolean {
     if (!this.alive) return false;
 
@@ -128,7 +111,6 @@ export class PongGame extends MiniGame {
     }
     this.playerY = clamp(this.playerY, 0, this.height - PongGame.PADDLE_H);
 
-    // Simple tracking AI: chase whichever ball is closest to it.
     const target = this.nearestBall();
     const targetY = target === null ? this.height / 2 : target.y;
     const diff = targetY - PongGame.PADDLE_H / 2 - this.aiY;
@@ -137,12 +119,10 @@ export class PongGame extends MiniGame {
 
     this.balls = this.balls.filter((ball) => this.updateBall(ball, speed, dt));
 
-    // The run is over once every ball has slipped past the player.
     if (this.balls.length === 0) this.alive = false;
     return this.alive;
   }
 
-  /** Float one ball for a frame. Returns false once it is lost off the left. */
   private updateBall(ball: Ball, speed: number, dt: number): boolean {
     ball.x += ball.vx * speed * dt;
     ball.y += ball.vy * speed * dt;
@@ -164,7 +144,6 @@ export class PongGame extends MiniGame {
     return true;
   }
 
-  /** The ball furthest to the right, i.e. the one about to reach the AI. */
   private nearestBall(): Ball | null {
     let best: Ball | null = null;
     for (const ball of this.balls) {
@@ -203,7 +182,6 @@ export class PongGame extends MiniGame {
     }
   }
 
-  // -- rendering -----------------------------------------------------------
   override draw(ctx: CanvasRenderingContext2D): void {
     ctx.fillStyle = `rgb(${BLACK[0]},${BLACK[1]},${BLACK[2]})`;
     ctx.fillRect(0, 0, this.width, this.height);

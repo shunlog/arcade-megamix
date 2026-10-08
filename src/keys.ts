@@ -1,5 +1,3 @@
-// Keyboard codes as used by the DOM `KeyboardEvent.code` values.
-
 export const Keys = {
   UP: "ArrowUp",
   DOWN: "ArrowDown",

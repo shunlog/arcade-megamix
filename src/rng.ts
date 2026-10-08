@@ -1,5 +1,3 @@
-// Small random helper mirroring the bits of Python's `random.Random` we use.
-
 export interface Rng {
   random(): number;
   choice<T>(items: readonly T[]): T;
@@ -22,12 +20,10 @@ class BaseRng implements Rng {
   }
 }
 
-/** Default generator backed by `Math.random`. */
 export function defaultRng(): Rng {
   return new BaseRng(() => Math.random());
 }
 
-/** Deterministic generator for tests and reproducible runs (mulberry32). */
 export function seededRng(seed: number): Rng {
   let state = seed >>> 0;
   return new BaseRng(() => {

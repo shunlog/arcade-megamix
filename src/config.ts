@@ -1,12 +1,9 @@
-// Shared constants, colors and a chunky pixel font helper.
-
 export const SCREEN_W = 800;
 export const SCREEN_H = 600;
 export const FPS = 60;
 
 export type Color = readonly [number, number, number];
 
-// --- Palette ----------------------------------------------------------------
 export const BLACK: Color = [8, 8, 16];
 export const WHITE: Color = [240, 240, 240];
 export const GRAY: Color = [90, 90, 110];
@@ -33,8 +30,6 @@ export const GHOST_PINK: Color = [240, 140, 190];
 export const GHOST_CYAN: Color = [90, 220, 230];
 export const PELLET: Color = [240, 210, 160];
 
-// --- Scoring (normalised across games) --------------------------------------
-// Pac-Man pellet is the baseline: 1 point.
 export const SCORE_PAC_PELLET = 1;
 export const SCORE_SNAKE_APPLE = 5;
 export const SCORE_PONG_HIT = 5;
@@ -43,26 +38,16 @@ export const SCORE_ASTEROID_BIG = 10;
 export const SCORE_ASTEROID_SMALL = 5;
 export const SCORE_TRON_KILL = 25;
 
-// --- Level timing -----------------------------------------------------------
-// Every mini-game shares one duration per level. The level duration covers the
-// whole cycle and is split into eight ticks: six playing ticks plus a two-tick
-// pause. Completing a full cycle through all mini-games raises the level and
-// removes LEVEL_STEP seconds, down to LEVEL_FLOOR.
-export const LEVEL_START = 10.0; // total level duration at level 0
-export const LEVEL_STEP = 1.0; // seconds removed per level
-export const LEVEL_FLOOR = 3.0; // minimum level duration
+export const LEVEL_START = 10.0;
+export const LEVEL_STEP = 1.0;
+export const LEVEL_FLOOR = 3.0;
 
-export const PLAY_TICKS = 6; // playing ticks per cycle
-export const PAUSE_TICKS = 2; // pause ticks per cycle
+export const PLAY_TICKS = 6;
+export const PAUSE_TICKS = 2;
 export const TICKS_PER_CYCLE = PLAY_TICKS + PAUSE_TICKS;
 
-// --- Global speed multiplier ------------------------------------------------
-// Every mini-game runs at this multiple of its base speed. It is 1.0 at level
-// 0 and gains 0.1 for every level after that, so the whole arcade speeds up as
-// the run progresses. Games read it from `MiniGame.speedMultiplier`.
 export const SPEED_PER_LEVEL = 0.1;
 
-/** Speed multiplier for a given level: 1.0 at level 0, +0.1 per level. */
 export function speedMultiplier(level: number): number {
   return 1.0 + Math.max(0, level) * SPEED_PER_LEVEL;
 }
@@ -74,25 +59,18 @@ export function speedMultiplier(level: number): number {
 // value is 1.0, 1.1, 1.3, 1.6, 2.0, 2.5, ...
 export const SCORE_PER_LEVEL_STEP = 0.1;
 
-/** Score multiplier for a given level. */
 export function scoreMultiplier(level: number): number {
   const n = Math.max(0, level);
   return 1.0 + (SCORE_PER_LEVEL_STEP * (n * (n + 1))) / 2;
 }
 
-/** Format a colour tuple as a canvas fillStyle string. */
 export function rgb(color: Color): string {
   return `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
 }
 
-// --- Bitmap pixel font ------------------------------------------------------
-// A hand-authored 5x7 glyph set drawn one square at a time. Because every
-// pixel is painted at an integer scale there is no anti-aliasing, so the
-// result stays razor sharp at any size (unlike scaling a system font up).
-
 const GLYPH_W = 5;
 const GLYPH_H = 7;
-const GLYPH_GAP = 1; // in glyph pixels, before scaling
+const GLYPH_GAP = 1;
 
 type Glyph = readonly [string, string, string, string, string, string, string];
 
@@ -159,10 +137,6 @@ const GLYPHS: Record<string, Glyph> = {
   "#": [".#.#.", ".#.#.", "#####", ".#.#.", "#####", ".#.#.", ".#.#."],
 };
 
-/**
- * A true bitmap pixel font: each 5x7 glyph is painted as integer-aligned
- * squares, so edges stay perfectly sharp with no anti-aliasing blur.
- */
 export class PixelFont {
   readonly scale: number;
 
@@ -170,17 +144,14 @@ export class PixelFont {
     this.scale = Math.max(1, Math.floor(scale));
   }
 
-  /** Height of one line of text in device pixels. */
   get height(): number {
     return GLYPH_H * this.scale;
   }
 
-  /** Width of a single character cell (glyph + spacing) in device pixels. */
   get advance(): number {
     return (GLYPH_W + GLYPH_GAP) * this.scale;
   }
 
-  /** Render `text` to an offscreen canvas so it can be drawn blocky. */
   render(text: string, color: Color, scale: number = this.scale): HTMLCanvasElement {
     const s = Math.max(1, Math.floor(scale));
     const chars = Array.from(text.toUpperCase());
@@ -208,7 +179,6 @@ export class PixelFont {
     return out;
   }
 
-  /** Draw `text` at (`x`, `y`) and return the rendered surface. */
   draw(
     ctx: CanvasRenderingContext2D,
     text: string,

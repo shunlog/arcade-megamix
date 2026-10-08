@@ -1,5 +1,3 @@
-// Run a single mini-game on its own, for testing and development.
-
 import { GRAY, PixelFont, SCREEN_H, SCREEN_W, WHITE } from "./config.js";
 import type { MiniGame } from "./games/index.js";
 import { PongGame } from "./games/pong.js";
@@ -14,10 +12,6 @@ export class StandaloneRunner {
   readonly big = new PixelFont(3);
   readonly small = new PixelFont(2);
   readonly game: MiniGame;
-  /**
-   * Countdown to Pong's next bonus ball while running standalone. Only used
-   * when the wrapped mini-game is a PongGame; reset with the game.
-   */
   private ballTimer = PongGame.BALL_SPAWN_INTERVAL;
 
   constructor(gameCls: StandaloneCtor, width = SCREEN_W, height = SCREEN_H) {
@@ -26,7 +20,6 @@ export class StandaloneRunner {
     this.game = new gameCls(width, height);
   }
 
-  /** Returns false when the runner should quit. */
   handleKeyDown(key: KeyCode): boolean {
     if (key === Keys.ESC) return false;
     if (key === Keys.R && !this.game.alive) {
@@ -46,7 +39,6 @@ export class StandaloneRunner {
     if (!this.game.alive) return;
     this.game.update(dt);
 
-    // Standalone Pong keeps growing: a fresh ball every few seconds.
     if (this.game instanceof PongGame && this.game.alive) {
       this.ballTimer -= dt;
       while (this.ballTimer <= 0) {

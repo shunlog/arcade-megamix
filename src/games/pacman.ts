@@ -1,11 +1,3 @@
-// Mini-game: Pac-Man.
-//
-// A compact hand-made maze. Eating a pellet is the scoring baseline (1 point).
-// Touching a ghost ends the run.
-//
-// The tile size is derived from the window so the field fills it, and the ghosts
-// move slower than the player.
-
 import {
   BLACK,
   DARK,
@@ -69,12 +61,9 @@ export class Ghost {
 export class PacmanGame extends MiniGame {
   name = "PAC-MAN";
 
-  // Seconds per tile. Ghosts are deliberately slower than the player.
   static readonly PAC_STEP = 0.18;
   static readonly GHOST_STEP = 0.3;
   static readonly MAX_QUEUE = 2;
-  // Half-angle of Pac-Man's mouth wedge (radians). Bigger than the old
-  // 0.5 to read clearly at small tile sizes.
   static readonly MOUTH_HALF_ANGLE = 0.78;
 
   readonly rng: Rng;
@@ -98,15 +87,12 @@ export class PacmanGame extends MiniGame {
     this.rng = rng;
     this.rows = MAZE.length;
     this.cols = MAZE[0].length;
-    // Pick the biggest whole-pixel tile that fits, then bottom-align so the
-    // top of the field clears the HUD.
     this.cell = Math.max(1, Math.min(Math.floor(width / this.cols), Math.floor(height / this.rows)));
     this.x0 = Math.floor((width - this.cols * this.cell) / 2);
     this.y0 = height - this.rows * this.cell;
     this.reset();
   }
 
-  // -- lifecycle -----------------------------------------------------------
   reset(): void {
     [this.pacX, this.pacY] = PAC_SPAWN;
     this.pacDir = [LEFT[0], LEFT[1]];
@@ -126,7 +112,6 @@ export class PacmanGame extends MiniGame {
     this.alive = true;
   }
 
-  // -- input ---------------------------------------------------------------
   override onKeyDown(key: KeyCode): void {
     super.onKeyDown(key);
     const mapping: Record<string, Vec> = {
@@ -144,9 +129,6 @@ export class PacmanGame extends MiniGame {
   }
 
   queueTurn(direction: Vec): boolean {
-    // A reversal is always legal (we came from the tile behind us), so apply
-    // it immediately and drop any buffered turn that could otherwise pin pac
-    // in place. Repeating the same reverse is simply ignored.
     if (
       direction[0] === -this.pacDir[0] &&
       direction[1] === -this.pacDir[1]
@@ -162,7 +144,6 @@ export class PacmanGame extends MiniGame {
     return true;
   }
 
-  // -- grid helpers --------------------------------------------------------
   private walkable(x: number, y: number, ghost = false): boolean {
     if (!(x >= 0 && x < this.cols && y >= 0 && y < this.rows)) return false;
     const cell = MAZE[y][x];
@@ -171,12 +152,9 @@ export class PacmanGame extends MiniGame {
     return true;
   }
 
-  // -- simulation ----------------------------------------------------------
   override update(dt: number): boolean {
     if (!this.alive) return false;
 
-    // Time flows faster with the global multiplier, so Pac-Man and the ghosts
-    // move at a proportionally higher rate while keeping their relative speed.
     const speed = this.speedMultiplier;
 
     this.pacTimer += dt * speed;
@@ -270,7 +248,6 @@ export class PacmanGame extends MiniGame {
     }
   }
 
-  // -- rendering -----------------------------------------------------------
   private px(gx: number): number {
     return this.x0 + gx * this.cell;
   }
@@ -282,9 +259,6 @@ export class PacmanGame extends MiniGame {
   override draw(ctx: CanvasRenderingContext2D): void {
     ctx.fillStyle = `rgb(${BLACK[0]},${BLACK[1]},${BLACK[2]})`;
     ctx.fillRect(0, 0, this.width, this.height);
-    // Pac-Man's mouth wedge is a separate, lower layer: walls, pellets and
-    // ghosts paint over it, so an enlarged mouth can never smear black across
-    // neighbouring tiles. The body (drawn last) has a matching notch.
     this.drawPacMouth(ctx);
     const c = this.cell;
     for (let y = 0; y < this.rows; y++) {
@@ -313,7 +287,6 @@ export class PacmanGame extends MiniGame {
     this.drawPac(ctx);
   }
 
-  /** Direction Pac-Man's mouth points, in canvas radians. */
   private pacAngle(): number {
     const angles: Record<string, number> = {
       "1,0": 0,
@@ -328,7 +301,6 @@ export class PacmanGame extends MiniGame {
     return Math.floor(this.cell / 2) - 3;
   }
 
-  /** Black mouth wedge, painted before the maze so it sits below it. */
   private drawPacMouth(ctx: CanvasRenderingContext2D): void {
     const c = this.cell;
     const cx = this.px(this.pacX) + Math.floor(c / 2);
@@ -345,8 +317,6 @@ export class PacmanGame extends MiniGame {
     const c = this.cell;
     const cx = this.px(this.pacX) + Math.floor(c / 2);
     const cy = this.py(this.pacY) + Math.floor(c / 2);
-    // Notched disc instead of a full circle plus black triangle, so the body
-    // does not paint over the lower mouth layer.
     fillDiscMinusWedge(ctx, PAC_YELLOW, cx, cy, this.pacRadius(), this.pacAngle(), PacmanGame.MOUTH_HALF_ANGLE);
   }
 

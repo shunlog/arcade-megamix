@@ -1,8 +1,3 @@
-// Mini-game: Asteroids.
-//
-// The ship persists between switches. A fresh wave of asteroids is added every
-// time the main game completes a full loop through the five mini-games.
-
 import {
   ASTEROID_GRAY,
   BLACK,
@@ -42,11 +37,6 @@ export class AsteroidsGame extends MiniGame {
   static readonly ROT_SPEED = 4.0;
   static readonly THRUST = 260.0;
   static readonly FRICTION = 0.4;
-  /**
-   * Safety net only. The fire rate is governed by FIRE_COOLDOWN: with a 0.18s
-   * cooldown and a 1.2s bullet life at most ~7 bullets are ever alive, so this
-   * must stay above that or it starts blocking shots and the cadence stutters.
-   */
   static readonly MAX_BULLETS = 8;
   static readonly FIRE_COOLDOWN = 0.18;
 
@@ -58,7 +48,6 @@ export class AsteroidsGame extends MiniGame {
   shipVy!: number;
   angle!: number;
   fireTimer!: number;
-  /** A fire press seen since the last shot, so taps are never dropped. */
   fireQueued!: boolean;
   bullets!: Bullet[];
   asteroids!: Asteroid[];
@@ -69,7 +58,6 @@ export class AsteroidsGame extends MiniGame {
     this.reset();
   }
 
-  // -- lifecycle -----------------------------------------------------------
   reset(): void {
     this.shipX = this.width / 2;
     this.shipY = this.height / 2;
@@ -120,7 +108,6 @@ export class AsteroidsGame extends MiniGame {
     if (key === Keys.SPACE) this.fireQueued = true;
   }
 
-  // -- simulation ----------------------------------------------------------
   override update(dt: number): boolean {
     if (!this.alive) return false;
 
@@ -142,15 +129,12 @@ export class AsteroidsGame extends MiniGame {
     // they are integrated into position, so every moving thing scales at once
     // and a level change takes effect immediately.
 
-    // mild drag so the ship does not accelerate forever
     this.shipVx -= this.shipVx * AsteroidsGame.FRICTION * dt;
     this.shipVy -= this.shipVy * AsteroidsGame.FRICTION * dt;
     this.shipX = mod(this.shipX + this.shipVx * speed * dt, this.width);
     this.shipY = mod(this.shipY + this.shipVy * speed * dt, this.height);
 
     this.fireTimer = Math.max(0, this.fireTimer - dt * speed);
-    // Holding SPACE keeps firing at the cooldown rate; a tap is remembered
-    // until the cooldown allows it, so quick presses are not lost.
     if ((this.pressed.has(Keys.SPACE) || this.fireQueued) && this.fireTimer <= 0) {
       this.fire();
     }
@@ -229,7 +213,6 @@ export class AsteroidsGame extends MiniGame {
     }
   }
 
-  // -- rendering -----------------------------------------------------------
   override draw(ctx: CanvasRenderingContext2D): void {
     ctx.fillStyle = `rgb(${BLACK[0]},${BLACK[1]},${BLACK[2]})`;
     ctx.fillRect(0, 0, this.width, this.height);

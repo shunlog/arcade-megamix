@@ -1,5 +1,3 @@
-// Main application: cycle through the mini-games, switching ever faster.
-
 import {
   DARK,
   GRAY,
@@ -23,27 +21,13 @@ import { SnakeGame } from "./games/snake.js";
 import { drawOverlay } from "./draw.js";
 import { Keys, type KeyCode } from "./keys.js";
 
-/** What the rotation is doing at the current tick. */
 export type RoundPhase = "play" | "pause" | "switch";
 
-/**
- * Tracks which mini-game is active and where we are in the 8-buzz cycle.
- *
- * A tick is the gap between two buzzes. The level duration covers the whole
- * cycle and is split into eight ticks: six play ticks, then a two-tick pause
- * during which the game is frozen and the pause / play sign is shown. On the
- * final tick the next mini-game is swapped in, still paused; play resumes on
- * the next cycle's first tick.
- */
 export class RoundManager {
   index = 0;
-  /** Level = completed full cycles through every mini-game. */
   level = 0;
-  /** Position within the cycle: 0-5 play, 6 pause sign, 7 swap + play sign. */
   tickIndex = 0;
-  /** Seconds until the next tick / buzz. */
   remaining = 0;
-  /** Set when a cycle wraps; the level rises at the next cycle's tick 0. */
   private cycleComplete = false;
 
   constructor(
@@ -57,44 +41,30 @@ export class RoundManager {
     this.remaining = this.tickDuration;
   }
 
-  /**
-   * Total level duration in seconds, including the pause at the end. Each
-   * level is 1s shorter than the last, down to the floor.
-   */
   get duration(): number {
     return Math.max(this.floor, this.start - this.level * this.step);
   }
 
-  /** Seconds between two buzzes: the level duration split across eight ticks. */
   get tickDuration(): number {
     return this.duration / TICKS_PER_CYCLE;
   }
 
-  /** Playing time within a level: the six play ticks. */
   get playDuration(): number {
     return PLAY_TICKS * this.tickDuration;
   }
 
-  /** Current phase, derived from the tick position. */
   get phase(): RoundPhase {
     if (this.tickIndex < PLAY_TICKS) return "play";
     return this.tickIndex === PLAY_TICKS ? "pause" : "switch";
   }
 
-  /** Seconds until the active mini-game is replaced (the tick-7 buzz). */
   get timeToSwitch(): number {
     if (this.tickIndex <= PLAY_TICKS) {
       return this.remaining + (PLAY_TICKS - this.tickIndex) * this.tickDuration;
     }
-    // Already showing the incoming game; the next switch is a full cycle away.
     return this.remaining + (TICKS_PER_CYCLE - 1) * this.tickDuration;
   }
 
-  /**
-   * Advance time. When a tick boundary is crossed the cycle moves on and the
-   * new tick index (0..7) is returned; otherwise returns -1. The level rises
-   * as the cycle wraps to tick 0, so the duration changes only between cycles.
-   */
   tick(dt: number): number {
     this.remaining -= dt;
     if (this.remaining > 0) return -1;
@@ -107,11 +77,6 @@ export class RoundManager {
     return this.tickIndex;
   }
 
-  /**
-   * Move to the next game. Returns true if this completes a full cycle; the
-   * level itself rises on the next tick 0, keeping the tick duration constant
-   * for the whole cycle.
-   */
   advance(): boolean {
     this.index += 1;
     if (this.index >= this.count) {
@@ -131,7 +96,6 @@ export class App {
   games: MiniGame[];
   round: RoundManager;
   gameOver = false;
-  /** Level the run starts on, set by the chosen difficulty. */
   readonly startLevel: number;
 
   constructor(width: number = SCREEN_W, height: number = SCREEN_H, startLevel = 0) {
@@ -145,7 +109,6 @@ export class App {
     this.applyMultipliers();
   }
 
-  /** Push the current level's speed and score multipliers onto every mini-game. */
   private applyMultipliers(): void {
     const speed = speedMultiplier(this.round.level);
     const score = scoreMultiplier(this.round.level);
@@ -172,34 +135,22 @@ export class App {
 
   private doSwitch(): void {
     const wrapped = this.round.advance();
-    // Every mini-game keeps its state; only Asteroids gets a fresh wave
-    // on each new loop through the full rotation.
     if (wrapped) {
       for (const g of this.games) {
         if (g instanceof AsteroidsGame) g.addWave(2);
-        // Pong gains a ball each level, so later levels get busier.
         if (g instanceof PongGame) g.addBall();
-        // Snake gains an extra apple each level, on top of the existing one.
         if (g instanceof SnakeGame) g.addApple();
       }
     }
-    // Drop held keys so a key held through the switch doesn't stick.
     for (const g of this.games) g.pressed.clear();
   }
 
-  /**
-   * Advance one frame. Returns the tick index that just began (0..7), or -1
-   * when no tick boundary was crossed. The mini-game only runs during the
-   * six play ticks; it is frozen while the pause / play sign is shown.
-   */
   update(dt: number): number {
     if (this.gameOver) return -1;
 
     const tick = this.round.tick(dt);
-    // The level (and so the multipliers) may have just changed.
     if (tick === 0) this.applyMultipliers();
     if (tick === TICKS_PER_CYCLE - 1) {
-      // Swap in the incoming mini-game during the pause; play resumes on tick 0.
       this.doSwitch();
     }
     if (this.round.phase === "play") {
@@ -208,7 +159,6 @@ export class App {
     return tick;
   }
 
-  /** Returns false when the app should quit. */
   handleKeyDown(key: KeyCode): boolean {
     if (key === Keys.ESC) return false;
     if (this.gameOver && key === Keys.R) {
@@ -226,15 +176,12 @@ export class App {
   draw(ctx: CanvasRenderingContext2D): void {
     this.active.draw(ctx);
 
-    // top-left: current level + current mini-game name
     const level = this.big.draw(ctx, `LV ${this.round.level}`, WHITE, 16, 12);
     this.small.draw(ctx, this.active.name, GRAY, 18, 12 + level.height + 6);
 
-    // top-right: big pixel score
     const score = this.big.render(String(this.totalScore).padStart(6, "0"), WHITE);
     ctx.drawImage(score, this.width - score.width - 16, 12);
 
-    // under the score: global score multiplier, e.g. "x1.1"
     const mult = this.small.render(`x${scoreMultiplier(this.round.level).toFixed(1)}`, GRAY);
     ctx.drawImage(mult, this.width - mult.width - 16, 12 + score.height + 6);
 
@@ -242,8 +189,6 @@ export class App {
       this.drawPhaseSign(ctx, this.round.phase);
     }
 
-    // The tick ring hugs the screen edge so it stays visible through the
-    // pause / play overlays.
     this.drawTickRing(ctx);
 
     if (this.gameOver) {
@@ -254,21 +199,14 @@ export class App {
     }
   }
 
-  /**
-   * Draw the eight-segment border around the whole screen that tracks the
-   * rotation's ticks: two segments per side. It fills clockwise from the
-   * top-left, so tick 0 lights one segment and tick 7 completes the screen.
-   */
   private drawTickRing(ctx: CanvasRenderingContext2D): void {
-    const t = 4; // border thickness
+    const t = 4;
     const w = this.width;
     const h = this.height;
     const innerH = h - t * 2;
     const halfH = Math.floor(innerH / 2);
     const halfW = Math.floor(w / 2);
 
-    // Clockwise from the top-left: top (left, right), right side (top,
-    // bottom), bottom (right, left), then the left side (bottom, top).
     const segments: ReadonlyArray<readonly [number, number, number, number]> = [
       [0, 0, halfW, t],
       [halfW, 0, w - halfW, t],
@@ -287,10 +225,6 @@ export class App {
     });
   }
 
-  /**
-   * Big centred symbol for the rotation pause: two bars while the game is
-   * frozen, a triangle once the incoming game is shown and about to start.
-   */
   private drawPhaseSign(ctx: CanvasRenderingContext2D, phase: "pause" | "switch"): void {
     const cx = this.width / 2;
     const cy = this.height / 2;

@@ -1,4 +1,3 @@
-// Zero-dependency static file server for local development.
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";

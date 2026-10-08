@@ -1,19 +1,11 @@
-// Drawing helpers for the canvas port of pygame's primitives.
-
 import type { Color, PixelFont } from "./config.js";
 import { WHITE, rgb } from "./config.js";
 
-/** One small line of text in a pause / game-over overlay. */
 export interface OverlayLine {
   text: string;
   color: Color;
 }
 
-/**
- * Draw the dimmed, centred overlay shared by the pause screen and the
- * game-over screens. Keeping the layout and title/line placement here means
- * every overlay looks the same no matter where it is triggered from.
- */
 export function drawOverlay(
   ctx: CanvasRenderingContext2D,
   width: number,
@@ -95,12 +87,6 @@ export function fillPolygon(
   ctx.fill();
 }
 
-/**
- * Fill a disc with a wedge-shaped bite taken out of it. `angle` is the
- * direction the missing wedge points and `mouth` its half-angle in radians.
- * Used for Pac-Man so the mouth is a real cut-out rather than a black
- * triangle painted on top of the maze.
- */
 export function fillDiscMinusWedge(
   ctx: CanvasRenderingContext2D,
   color: Color,
@@ -154,7 +140,6 @@ export function beginRoundedRect(
   ctx.closePath();
 }
 
-/** Python's `%` semantics (result has the sign of the divisor). */
 export function mod(a: number, b: number): number {
   return ((a % b) + b) % b;
 }

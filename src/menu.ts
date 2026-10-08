@@ -1,9 +1,3 @@
-// Canvas menus used for the startup screen and the mini-game picker.
-//
-// A menu is a list of labelled buttons navigated with the arrow keys / WASD
-// and activated with Enter or Space. The same buttons also respond to the
-// mouse, so clicking works too.
-
 import { BLACK, DARK, GRAY, PixelFont, WHITE, rgb } from "./config.js";
 import { fillRect } from "./draw.js";
 import { Keys } from "./keys.js";
@@ -23,7 +17,6 @@ interface Rect {
 export class Menu {
   selected = 0;
   private rects: Rect[] = [];
-  /** Optional shell hooks so the host can play selection / confirm sounds. */
   onMove: (() => void) | null = null;
   onActivate: (() => void) | null = null;
 
@@ -35,7 +28,6 @@ export class Menu {
     readonly subtitle = "",
   ) {}
 
-  /** Move the selection, wrapping around the ends. */
   move(delta: number): void {
     const n = this.items.length;
     if (n === 0) return;
@@ -48,7 +40,6 @@ export class Menu {
     this.items[this.selected]?.onSelect();
   }
 
-  /** Returns true when the menu consumed the key. */
   handleKeyDown(key: string): boolean {
     if (key === Keys.UP || key === Keys.W) {
       this.move(-1);
@@ -73,7 +64,6 @@ export class Menu {
     }
   }
 
-  /** True when (`x`, `y`) is inside one of the buttons. */
   isOver(x: number, y: number): boolean {
     return this.hitTest(x, y) >= 0;
   }

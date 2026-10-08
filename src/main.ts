@@ -1,9 +1,3 @@
-// Browser entry point: wires the canvas, input and main loop.
-//
-// The game boots into a startup menu. From there the player can start the
-// full "megamix" rotation or open a sub-menu that launches a single
-// mini-game. There is no URL-based game selection any more.
-
 import { GRAY, PixelFont, SCREEN_H, SCREEN_W } from "./config.js";
 import { App } from "./app.js";
 import { drawOverlay } from "./draw.js";
@@ -19,7 +13,6 @@ function isTypingKey(code: string): boolean {
   return code === Keys.UP || code === Keys.DOWN || code === Keys.LEFT || code === Keys.RIGHT || code === Keys.SPACE;
 }
 
-/** Map a mouse event to canvas coordinates, honouring the CSS letterbox. */
 function canvasPoint(canvas: HTMLCanvasElement, event: MouseEvent): [number, number] {
   const rect = canvas.getBoundingClientRect();
   const scale = Math.min(rect.width / SCREEN_W, rect.height / SCREEN_H);
@@ -44,14 +37,12 @@ function start(): void {
 
   const buzzer = new Buzzer();
 
-  /** Play (and clear) the effects a mini-game queued during its update. */
   const playSound = (game: MiniGame): void => {
     if (game.sounds.length === 0) return;
     for (const name of game.sounds) buzzer.sfx(name);
     game.sounds.length = 0;
   };
 
-  /** Set once the current run's death melody has been played. */
   let deathAnnounced = false;
 
   const showMenu = (): void => {
@@ -69,7 +60,7 @@ function start(): void {
     deathAnnounced = false;
     screen = "megamix";
     buzzer.sfx("start");
-    buzzer.tick(0); // play begins on tick 0
+    buzzer.tick(0);
   };
 
   const startStandalone = (ctor: (typeof GAME_ENTRIES)[number]["ctor"]): void => {
@@ -127,7 +118,6 @@ function start(): void {
           ? difficultyMenu
           : null;
 
-  // Let every menu click and move while the shell plays a matching blip.
   for (const menu of [mainMenu, difficultyMenu, miniMenu]) {
     menu.onMove = () => buzzer.sfx("menuMove");
     menu.onActivate = () => buzzer.sfx("menuSelect");
@@ -136,7 +126,7 @@ function start(): void {
   const keyDown = (event: KeyboardEvent): void => {
     const code = event.code as KeyCode;
     if (isTypingKey(code)) event.preventDefault();
-    buzzer.resume(); // unlock audio from a user gesture
+    buzzer.resume();
 
     const menu = activeMenu();
     if (menu !== null) {
@@ -214,7 +204,7 @@ function start(): void {
   };
 
   const click = (event: MouseEvent): void => {
-    buzzer.resume(); // unlock audio from a user gesture
+    buzzer.resume();
     const menu = activeMenu();
     if (menu === null) return;
     const [x, y] = canvasPoint(canvas, event);
@@ -236,7 +226,7 @@ function start(): void {
   const frame = (now: number): void => {
     let dt = (now - last) / 1000;
     last = now;
-    if (dt > 0.1) dt = 0.1; // avoid huge jumps after tab switches
+    if (dt > 0.1) dt = 0.1;
 
     if (screen === "menu") {
       mainMenu.draw(ctx, SCREEN_W, SCREEN_H);

@@ -1,8 +1,3 @@
-// Mini-game: Tron (light cycles).
-//
-// The player and one enemy rider leave permanent trails. Crashing into a wall or
-// any trail kills you; making the enemy crash is worth a big pile of points.
-
 import { BLACK, SCORE_TRON_KILL, TRON_ENEMY, TRON_GRID, TRON_PLAYER } from "../config.js";
 import { fillRect } from "../draw.js";
 import { Keys, type KeyCode } from "../keys.js";
@@ -56,19 +51,12 @@ export class TronGame extends MiniGame {
     this.reset();
   }
 
-  // -- lifecycle -----------------------------------------------------------
   reset(): void {
     this.score = 0;
     this.alive = true;
     this.resetArena();
   }
 
-  /**
-   * Fresh board: both riders back at their start, all trails cleared.
-   *
-   * Used at the start of a run and every time the enemy rider dies, so the
-   * arena never gets permanently clogged with old trails.
-   */
   private resetArena(): void {
     this.player = new Rider(5, Math.floor(this.rows / 2), [RIGHT[0], RIGHT[1]], TRON_PLAYER, true);
     this.enemy = new Rider(
@@ -80,7 +68,6 @@ export class TronGame extends MiniGame {
     this.moveTimer = 0;
   }
 
-  // -- input ---------------------------------------------------------------
   override onKeyDown(key: KeyCode): void {
     super.onKeyDown(key);
     const mapping: Record<string, Vec> = {
@@ -106,11 +93,8 @@ export class TronGame extends MiniGame {
     return true;
   }
 
-  // -- simulation ----------------------------------------------------------
   override update(dt: number): boolean {
     if (!this.alive) return false;
-    // Time flows faster with the global multiplier, so both riders step at a
-    // proportionally higher rate.
     this.moveTimer += dt * this.speedMultiplier;
     while (this.alive && this.moveTimer >= TronGame.STEP_TIME) {
       this.moveTimer -= TronGame.STEP_TIME;
@@ -133,7 +117,6 @@ export class TronGame extends MiniGame {
       proposals.set(r, { nx: r.x + direction[0], ny: r.y + direction[1], direction });
     }
 
-    // head-on collisions: same target cell by two riders
     const targetCounts = new Map<string, number>();
     for (const { nx, ny } of proposals.values()) {
       const key = `${nx},${ny}`;
@@ -205,7 +188,6 @@ export class TronGame extends MiniGame {
     }
     if (safe.length === 0) return rider.direction;
 
-    // Chase the player, but avoid cells we can already see are occupied.
     const danger = (d: Vec): number => {
       const nx = rider.x + d[0];
       const ny = rider.y + d[1];
@@ -215,8 +197,6 @@ export class TronGame extends MiniGame {
       return 0;
     };
 
-    // Precompute the random tie-break once per option, as Python's
-    // tuple sort key effectively does.
     const ranked = safe.map((d) => ({
       d,
       danger: danger(d),
@@ -233,7 +213,6 @@ export class TronGame extends MiniGame {
     return choice;
   }
 
-  // -- rendering -----------------------------------------------------------
   override draw(ctx: CanvasRenderingContext2D): void {
     ctx.fillStyle = `rgb(${BLACK[0]},${BLACK[1]},${BLACK[2]})`;
     ctx.fillRect(0, 0, this.width, this.height);
