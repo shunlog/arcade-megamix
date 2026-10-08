@@ -16,8 +16,10 @@ The mini-games rotate in this order:
 Each mini-game runs for eight ticks:
 
 - **Ticks 1-7** — you are playing. A tick lasts `level duration / 8`.
-- **Tick 8** — the next mini-game is swapped in, frozen, with a big pause
-  sign over the middle.
+- **Tick 8** — the switch tick. The current mini-game screen slides off to the
+  left while the next one slides in from the right, over the whole tick.
+  Ease-in-out, so it lands exactly as the tick ends; the game is frozen and the
+  big pause sign stays over the slide until play resumes.
 - **Next tick** — play starts again and the cycle repeats.
 
 Every mini-game has the same duration within a level. When you complete a

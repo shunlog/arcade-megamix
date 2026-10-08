@@ -1,4 +1,5 @@
 import {
+  BLACK,
   DARK,
   GRAY,
   LEVEL_FLOOR,
@@ -102,6 +103,9 @@ export class App implements GameSession {
   round: RoundManager;
   gameOver = false;
   readonly startLevel: number;
+  /** Index of the mini-game sliding out during the tick-8 switch, or null. */
+  transitionFrom: number | null = null;
+  private transitionSpan = 0;
 
   constructor(width: number = SCREEN_W, height: number = SCREEN_H, startLevel = 0) {
     this.width = width;
@@ -144,7 +148,18 @@ export class App implements GameSession {
     this.round = new RoundManager(this.games.length, LEVEL_START, LEVEL_STEP, LEVEL_FLOOR, this.startLevel);
     this.applyMultipliers();
     this.gameOver = false;
+    this.transitionFrom = null;
     this.onTick?.(0);
+  }
+
+  /**
+   * Progress of the tick-8 slide, 0 at the moment of the switch and 1 exactly
+   * when the tick (and therefore the animation) ends.
+   */
+  get transitionProgress(): number {
+    if (this.transitionFrom === null || this.transitionSpan <= 0) return 1;
+    const p = 1 - this.round.remaining / this.transitionSpan;
+    return Math.max(0, Math.min(1, p));
   }
 
   drainSounds(): Sfx[] {
@@ -173,9 +188,15 @@ export class App implements GameSession {
     if (this.gameOver) return;
 
     const tick = this.round.tick(dt);
-    if (tick === 0) this.applyMultipliers();
+    if (tick === 0) {
+      this.transitionFrom = null;
+      this.applyMultipliers();
+    }
     if (tick === TICKS_PER_CYCLE - 1) {
+      // Swap in the next game and start the slide that fills this whole tick.
+      this.transitionFrom = this.round.index;
       this.doSwitch();
+      this.transitionSpan = this.round.remaining;
     }
     if (this.round.phase === "play") {
       if (!this.active.update(dt)) this.gameOver = true;
@@ -192,7 +213,11 @@ export class App implements GameSession {
   }
 
   draw(ctx: CanvasRenderingContext2D): void {
-    this.active.draw(ctx);
+    if (this.transitionFrom !== null) {
+      this.drawSwitch(ctx);
+    } else {
+      this.active.draw(ctx);
+    }
 
     const level = this.big.draw(ctx, `LV ${this.round.level}`, WHITE, HUD_MARGIN, HUD_TOP);
     this.small.draw(ctx, this.active.name, GRAY, HUD_MARGIN + 2, HUD_TOP + level.height + 6);
@@ -204,6 +229,30 @@ export class App implements GameSession {
     }
 
     this.drawTickRing(ctx);
+  }
+
+  /**
+   * Tick-8 slide: the outgoing mini-game screen exits to the left while the
+   * incoming one enters from the right, over a full tick with ease-in-out.
+   */
+  private drawSwitch(ctx: CanvasRenderingContext2D): void {
+    const from = this.games[this.transitionFrom!];
+    const p = this.transitionProgress;
+    const eased = p * p * (3 - 2 * p);
+    const offset = eased * this.width;
+
+    ctx.fillStyle = rgb(BLACK);
+    ctx.fillRect(0, 0, this.width, this.height);
+
+    ctx.save();
+    ctx.translate(-offset, 0);
+    from.draw(ctx);
+    ctx.restore();
+
+    ctx.save();
+    ctx.translate(this.width - offset, 0);
+    this.active.draw(ctx);
+    ctx.restore();
   }
 
   private drawTickRing(ctx: CanvasRenderingContext2D): void {

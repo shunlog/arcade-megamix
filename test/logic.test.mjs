@@ -122,6 +122,34 @@ test("app cycles through every game and adds asteroids on wrap", () => {
   assert.equal(asteroids.asteroids.length, rocks + 2);
 });
 
+test("the tick-8 switch starts a full-tick slide that ends when play resumes", () => {
+  const app = new App(800, 600, 0);
+  // Keep every mini-game alive and cheap so the run reaches tick 8.
+  for (const g of app.games) {
+    g.update = () => true;
+    g.draw = () => {};
+  }
+
+  const tick = app.round.tickDuration;
+  const start = app.round.index;
+
+  for (let i = 0; i < 7; i++) app.update(tick + 1e-6);
+  assert.equal(app.round.tickIndex, 7);
+  assert.equal(app.round.phase, "pause");
+  assert.equal(app.transitionFrom, start);
+  assert.equal(app.round.index, (start + 1) % app.games.length);
+  assert.ok(app.transitionProgress < 0.05);
+
+  app.update(tick / 2);
+  assert.ok(app.transitionProgress > 0.4 && app.transitionProgress < 0.6);
+
+  app.update(tick / 2 + 1e-6);
+  assert.equal(app.round.tickIndex, 0);
+  assert.equal(app.round.phase, "play");
+  assert.equal(app.transitionFrom, null);
+  assert.equal(app.transitionProgress, 1);
+});
+
 test("app gives pong an extra ball on every level wrap", () => {
   const app = new App();
   const pong = app.games.find((g) => g instanceof PongGame);
