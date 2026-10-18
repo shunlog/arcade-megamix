@@ -1,3 +1,5 @@
+Vibe-coded.
+
 # Arcade Megamix
 
 Five classic arcade games in one, switching at an ever faster rate. Survive as
