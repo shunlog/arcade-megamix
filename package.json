@@ -12,7 +12,7 @@
     "dev": "tsc --watch --preserveWatchOutput & live-server --port=8080 --watch=dist,index.html,embed.html --open=/",
     "start": "pnpm run build && node serve.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "tsc && node --test test"
+    "test": "tsc && node --test \"test/**/*.test.mjs\""
   },
   "devDependencies": {
     "live-server": "^1.2.2",

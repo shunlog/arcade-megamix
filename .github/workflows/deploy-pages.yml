@@ -45,7 +45,7 @@ jobs:
         run: pnpm run typecheck
 
       - name: Test
-        run: node --test test
+        run: node --test "test/**/*.test.mjs"
 
       - name: Assemble site
         run: |
